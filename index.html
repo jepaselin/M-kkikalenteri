@@ -17,7 +17,7 @@
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
 
-    <!-- LOGIN / REGISTER / RECOVERY VIEW -->
+    <!-- LOGIN VIEW -->
     <div id="auth-container" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 overflow-hidden relative">
             <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-teal-500 to-indigo-600"></div>
@@ -25,46 +25,22 @@
                 <div class="w-16 h-16 bg-teal-50 text-teal-600 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-4 shadow-inner">
                     <i class="fa-solid fa-mountain-sun"></i>
                 </div>
-                <h1 id="auth-title" class="text-2xl font-bold text-slate-900">Mökkikalenteri</h1>
-                <p id="auth-subtitle" class="text-sm text-slate-500 mt-1">Kirjaudu sisään hallitaksesi varauksia</p>
+                <h1 class="text-2xl font-bold text-slate-900">Mökkikalenteri</h1>
+                <p class="text-sm text-slate-500 mt-1">Kirjaudu sisään hallitaksesi varauksia tai tehtäviä</p>
             </div>
 
-            <!-- Standard Auth Form -->
             <form id="auth-form" class="space-y-4">
-                <div id="email-field-container">
+                <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Sähköpostiosoite</label>
                     <input type="email" id="email" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="esimerkki@email.fi">
                 </div>
-                <div id="password-field-container">
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Salasana</label>
-                    <input type="password" id="password" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="••••••••">
-                    <div class="flex justify-end mt-1">
-                        <button type="button" id="forgot-password-link" class="text-xs text-teal-600 hover:underline font-medium">Unohditko salasanan?</button>
-                    </div>
-                </div>
-
-                <div id="auth-error" class="hidden text-xs text-rose-500 bg-rose-50 border border-rose-100 p-3 rounded-xl font-medium"></div>
-                <div id="auth-success" class="hidden text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 p-3 rounded-xl font-medium"></div>
-
-                <button type="submit" id="auth-submit-btn" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-lg transition">Kirjaudu sisään</button>
-            </form>
-
-            <!-- Update Password Form (Recovery) -->
-            <form id="update-password-form" class="hidden space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Uusi salasana</label>
-                    <input type="password" id="new-password" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Syötä uusi salasana">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Salasana</label>
+                    <input type="password" id="password" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="••••••••">
                 </div>
-                <div id="update-error" class="hidden text-xs text-rose-500 bg-rose-50 border border-rose-100 p-3 rounded-xl font-medium"></div>
-                <button type="submit" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-lg transition">Tallenna uusi salasana</button>
+                <div id="auth-error" class="hidden text-xs text-rose-500 bg-rose-50 border border-rose-100 p-3 rounded-xl font-medium"></div>
+                <button type="submit" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-lg transition">Kirjaudu sisään</button>
             </form>
-
-            <div class="mt-6 text-center space-y-2">
-                <button type="button" id="toggle-auth-mode" class="block w-full text-xs text-slate-500 hover:text-teal-600 font-medium transition">
-                    Eikö sinulla ole vielä tiliä? <span class="text-teal-600 font-bold underline">Rekisteröidy</span>
-                </button>
-                <button type="button" id="back-to-login-btn" class="hidden block w-full text-xs text-teal-600 font-bold underline transition">Takaisin kirjautumiseen</button>
-            </div>
         </div>
     </div>
 
@@ -84,7 +60,7 @@
                 <div class="flex items-center space-x-4">
                     <button id="open-modal-btn" class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-md transition flex items-center space-x-2">
                         <i class="fa-solid fa-plus"></i>
-                        <span>Lisää uusi varaus</span>
+                        <span>Lisää varaus / tehtävä</span>
                     </button>
                     <button id="logout-btn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-4 py-2.5 rounded-xl transition">Kirjaudu ulos</button>
                 </div>
@@ -92,24 +68,22 @@
         </header>
 
         <!-- Navigation Tabs -->
-        <div id="admin-tabs-container" class="bg-white border-b border-slate-200">
+        <div id="nav-tabs-container" class="bg-white border-b border-slate-200">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-8">
-                <button id="tab-calendar" class="py-3 text-sm font-bold text-teal-600 border-b-2 border-teal-600 transition flex items-center space-x-2"><i class="fa-solid fa-calendar"></i><span>Kalenteri</span></button>
-                <button id="tab-tasks" class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition flex items-center space-x-2"><i class="fa-solid fa-list-check"></i><span>Päivän tehtävät</span></button>
-                <button id="tab-reports" class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition flex items-center space-x-2"><i class="fa-solid fa-chart-pie"></i><span>Kuukausitilastot</span></button>
-                <button id="tab-cabins" class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition flex items-center space-x-2"><i class="fa-solid fa-house-chimney"></i><span>Mökkien hallinta</span></button>
+                <button id="tab-calendar" class="py-3 text-sm font-bold text-teal-600 border-b-2 border-teal-600 transition">Kalenteri</button>
+                <button id="tab-tasks" class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition">Päivän tehtävät</button>
+                <button id="tab-reports" class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition">Kuukausitilastot</button>
+                <button id="tab-cabins" class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition">Mökkien hallinta</button>
             </div>
         </div>
 
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full grid grid-cols-1 lg:grid-cols-4 gap-8">
             <div class="lg:col-span-1 space-y-6">
                 <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
-                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Varaukset & Tilastot</h2>
-                    <div class="space-y-4">
-                        <div class="p-4 bg-teal-50 border border-teal-100 rounded-xl">
-                            <div class="text-xs font-semibold text-teal-600 uppercase">Merkintöjä yhteensä</div>
-                            <div id="stat-total-events" class="text-2xl font-black text-teal-900 mt-1">0</div>
-                        </div>
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Tilastot</h2>
+                    <div class="p-4 bg-teal-50 border border-teal-100 rounded-xl">
+                        <div class="text-xs font-semibold text-teal-600 uppercase">Merkintöjä yhteensä</div>
+                        <div id="stat-total-events" class="text-2xl font-black text-teal-900 mt-1">0</div>
                     </div>
                 </div>
             </div>
@@ -132,7 +106,7 @@
                 <!-- Reports View -->
                 <div id="view-reports-wrapper" class="hidden bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-6">
                     <div class="flex items-center justify-between pb-4 border-b border-slate-100">
-                        <h2 class="text-xl font-bold text-slate-900">Kuukausitilastot ja tarkat tiedot</h2>
+                        <h2 class="text-xl font-bold text-slate-900">Kuukausitilastot</h2>
                         <input type="month" id="report-month-picker" class="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold">
                     </div>
                     <div id="monthly-reports-content" class="space-y-4"></div>
@@ -155,7 +129,7 @@
     <!-- EVENT MODAL -->
     <div id="event-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 relative">
-            <h2 class="text-xl font-bold mb-4">Lisää / Muokkaa varausta</h2>
+            <h2 class="text-xl font-bold mb-4">Lisää / Muokkaa merkintää</h2>
             <form id="event-form" class="space-y-4">
                 <input type="hidden" id="event-id">
                 <div>
@@ -164,15 +138,9 @@
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold uppercase mb-1">Check-in Pvm</label>
-                        <input type="date" id="event-check-in-date" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold uppercase mb-1">Check-out Pvm</label>
+                        <label class="block text-xs font-semibold uppercase mb-1">Päivämäärä / Check-out</label>
                         <input type="date" id="event-check-out-date" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm">
                     </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase mb-1">Kategoria</label>
                         <select id="event-category" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm">
@@ -181,21 +149,18 @@
                             <option value="varaus">Varaus</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold uppercase mb-1">Liinavaatteet (kpl)</label>
-                        <input type="number" id="event-linens" min="0" value="0" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm">
-                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase mb-1">Liinavaatteet (kpl)</label>
+                    <input type="number" id="event-linens" min="0" value="0" class="w-full px-4 py-2 bg-slate-50 border rounded-xl text-sm">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase mb-1">Lisätieto</label>
-                    <textarea id="event-notes" rows="2" class="w-full px-4 py-2 bg-slate-50 border rounded-xl text-sm" placeholder="Lisätietoja..."></textarea>
+                    <textarea id="event-notes" rows="2" class="w-full px-4 py-2 bg-slate-50 border rounded-xl text-sm"></textarea>
                 </div>
-                <div class="flex justify-between items-center pt-2">
-                    <button type="button" id="delete-event-btn" class="hidden px-4 py-2 bg-rose-50 text-rose-600 rounded-xl text-sm font-semibold">Poista</button>
-                    <div class="flex space-x-3 ml-auto">
-                        <button type="button" id="cancel-modal-btn" class="px-4 py-2 bg-slate-100 rounded-xl text-sm">Peruuta</button>
-                        <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-semibold">Tallenna</button>
-                    </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" id="cancel-modal-btn" class="px-4 py-2 bg-slate-100 rounded-xl text-sm">Peruuta</button>
+                    <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-xl text-sm">Tallenna</button>
                 </div>
             </form>
         </div>
@@ -209,82 +174,46 @@
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let currentUser = null, calendar = null, allEventsCache = [], allCabinsCache = [];
-        let isRegisterMode = false, isForgotPasswordMode = false, isPasswordRecoveryMode = false;
-
-        const authContainer = document.getElementById('auth-container');
-        const appContainer = document.getElementById('app-container');
-        const authForm = document.getElementById('auth-form');
-        const updatePasswordForm = document.getElementById('update-password-form');
-        const passwordFieldContainer = document.getElementById('password-field-container');
-        const authTitle = document.getElementById('auth-title');
-        const authSubtitle = document.getElementById('auth-subtitle');
-        const authSubmitBtn = document.getElementById('auth-submit-btn');
-        const toggleAuthModeBtn = document.getElementById('toggle-auth-mode');
-        const backToLoginBtn = document.getElementById('back-to-login-btn');
-        const forgotPasswordLink = document.getElementById('forgot-password-link');
-        const authError = document.getElementById('auth-error');
-        const authSuccess = document.getElementById('auth-success');
-        const updateError = document.getElementById('update-error');
 
         window.addEventListener('DOMContentLoaded', async () => {
-            supabaseClient.auth.onAuthStateChange(async (event, session) => {
-                if (event === "PASSWORD_RECOVERY") {
-                    isPasswordRecoveryMode = true;
-                    showUpdatePasswordView();
-                } else if (session) {
-                    if (!isPasswordRecoveryMode) {
-                        currentUser = session.user;
-                        showApp();
-                    }
-                } else {
-                    if (!isPasswordRecoveryMode) {
-                        currentUser = null;
-                        showAuth();
-                    }
-                }
-            });
-
             const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session && !isPasswordRecoveryMode) {
+            if (session) {
                 currentUser = session.user;
                 showApp();
-            } else if (!isPasswordRecoveryMode) {
-                showAuth();
+            } else {
+                document.getElementById('auth-container').classList.remove('hidden');
             }
 
             const today = new Date().toISOString().split('T')[0];
-            const taskPicker = document.getElementById('task-date-picker');
-            if (taskPicker) {
-                taskPicker.value = today;
-                taskPicker.addEventListener('change', renderTasks);
-            }
+            document.getElementById('task-date-picker').value = today;
+            document.getElementById('task-date-picker').addEventListener('change', renderTasks);
 
-            const reportPicker = document.getElementById('report-month-picker');
-            if (reportPicker) {
-                reportPicker.value = today.slice(0, 7);
-                reportPicker.addEventListener('change', renderReports);
+            const currentMonth = today.slice(0, 7);
+            document.getElementById('report-month-picker').value = currentMonth;
+            document.getElementById('report-month-picker').addEventListener('change', renderReports);
+        });
+
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) {
+                document.getElementById('auth-error').textContent = "Virhe kirjautumisessa: " + error.message;
+                document.getElementById('auth-error').classList.remove('hidden');
+            } else {
+                location.reload();
             }
         });
 
-        function showAuth() {
-            authContainer.classList.remove('hidden');
-            appContainer.classList.add('hidden');
-        }
-
-        function showUpdatePasswordView() {
-            authContainer.classList.remove('hidden');
-            appContainer.classList.add('hidden');
-            authForm.classList.add('hidden');
-            updatePasswordForm.classList.remove('hidden');
-            authTitle.textContent = "Vaihda uusi salasana";
-            authSubtitle.textContent = "Kirjoita uusi salasana tilillesi";
-            toggleAuthModeBtn.classList.add('hidden');
-            backToLoginBtn.classList.add('hidden');
-        }
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+            location.reload();
+        });
 
         async function showApp() {
-            authContainer.classList.add('hidden');
-            appContainer.classList.remove('hidden');
+            document.getElementById('auth-container').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
 
             const isAdmin = currentUser.email === ADMIN_EMAIL;
             const isWorker = WORKER_EMAILS.includes(currentUser.email);
@@ -294,122 +223,16 @@
             await loadCabins();
             await loadEvents();
             initCalendar();
-            renderTasks();
-            renderReports();
 
             if (isWorker && !isAdmin) {
-                document.getElementById('admin-tabs-container').classList.add('hidden');
+                document.getElementById('nav-tabs-container').classList.add('hidden');
                 document.getElementById('view-calendar-wrapper').classList.add('hidden');
                 document.getElementById('view-tasks-wrapper').classList.remove('hidden');
                 renderTasks();
             }
         }
 
-        forgotPasswordLink.addEventListener('click', () => {
-            isForgotPasswordMode = true;
-            isRegisterMode = false;
-            authTitle.textContent = "Palauta salasana";
-            authSubtitle.textContent = "Lähetämme sähköpostiisi palautuslinkin";
-            authSubmitBtn.textContent = "Lähetä palautuslinkki";
-            passwordFieldContainer.classList.add('hidden');
-            toggleAuthModeBtn.classList.add('hidden');
-            backToLoginBtn.classList.remove('hidden');
-            authError.classList.add('hidden');
-            authSuccess.classList.add('hidden');
-        });
-
-        backToLoginBtn.addEventListener('click', () => {
-            isForgotPasswordMode = false;
-            isRegisterMode = false;
-            authTitle.textContent = "Mökkikalenteri";
-            authSubtitle.textContent = "Kirjaudu sisään hallitaksesi varauksia";
-            authSubmitBtn.textContent = "Kirjaudu sisään";
-            passwordFieldContainer.classList.remove('hidden');
-            toggleAuthModeBtn.classList.remove('hidden');
-            backToLoginBtn.classList.add('hidden');
-            authError.classList.add('hidden');
-            authSuccess.classList.add('hidden');
-        });
-
-        toggleAuthModeBtn.addEventListener('click', () => {
-            isRegisterMode = !isRegisterMode;
-            if (isRegisterMode) {
-                authTitle.textContent = "Luo uusi tili";
-                authSubtitle.textContent = "Rekisteröidy mökin omistajaksi";
-                authSubmitBtn.textContent = "Rekisteröidy";
-                toggleAuthModeBtn.innerHTML = 'Onko sinulla jo tili? <span class="text-teal-600 font-bold underline">Kirjaudu sisään</span>';
-            } else {
-                authTitle.textContent = "Mökkikalenteri";
-                authSubtitle.textContent = "Kirjaudu sisään hallitaksesi varauksia";
-                authSubmitBtn.textContent = "Kirjaudu sisään";
-                toggleAuthModeBtn.innerHTML = 'Eikö sinulla ole vielä tiliä? <span class="text-teal-600 font-bold underline">Rekisteröidy</span>';
-            }
-            authError.classList.add('hidden');
-            authSuccess.classList.add('hidden');
-        });
-
-        authForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            authError.classList.add('hidden');
-            authSuccess.classList.add('hidden');
-            const email = document.getElementById('email').value;
-
-            if (isForgotPasswordMode) {
-                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-                    redirectTo: window.location.href
-                });
-                if (error) {
-                    authError.textContent = "Virhe: " + error.message;
-                    authError.classList.remove('hidden');
-                } else {
-                    authSuccess.textContent = "Salasanan palautuslinkki lähetetty sähköpostiisi!";
-                    authSuccess.classList.remove('hidden');
-                }
-                return;
-            }
-
-            const password = document.getElementById('password').value;
-
-            if (isRegisterMode) {
-                const { error } = await supabaseClient.auth.signUp({ email, password });
-                if (error) {
-                    authError.textContent = error.message;
-                    authError.classList.remove('hidden');
-                } else {
-                    alert('Rekisteröityminen onnistui! Voit nyt kirjautua sisään.');
-                    isRegisterMode = false;
-                    authTitle.textContent = "Mökkikalenteri";
-                    authSubtitle.textContent = "Kirjaudu sisään hallitaksesi varauksia";
-                    authSubmitBtn.textContent = "Kirjaudu sisään";
-                }
-            } else {
-                const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                if (error) {
-                    authError.textContent = "Virhe kirjautumisessa: tarkista sähköposti ja salasana.";
-                    authError.classList.remove('hidden');
-                }
-            }
-        });
-
-        updatePasswordForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            updateError.classList.add('hidden');
-            const newPassword = document.getElementById('new-password').value;
-
-            const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
-            if (error) {
-                updateError.textContent = "Virhe: " + error.message;
-                updateError.classList.remove('hidden');
-            } else {
-                alert('Salasana vaihdettu onnistuneesti! Voit nyt kirjautua sisään.');
-                window.location.href = window.location.pathname;
-            }
-        });
-
-        document.getElementById('logout-btn').addEventListener('click', async () => {
-            await supabaseClient.auth.signOut();
-        });
-
+        // Tabs
         const tabs = [
             { btn: document.getElementById('tab-calendar'), wrapper: document.getElementById('view-calendar-wrapper') },
             { btn: document.getElementById('tab-tasks'), wrapper: document.getElementById('view-tasks-wrapper'), render: renderTasks },
@@ -420,10 +243,9 @@
         tabs.forEach(t => {
             if (!t.btn) return;
             t.btn.addEventListener('click', () => {
-                tabs.forEach(x => { if(x.btn) { x.btn.className = "py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent flex items-center space-x-2"; x.wrapper.classList.add('hidden'); }});
-                t.btn.className = "py-3 text-sm font-bold text-teal-600 border-b-2 border-teal-600 flex items-center space-x-2";
+                tabs.forEach(x => { if(x.btn) { x.btn.className = "py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent"; x.wrapper.classList.add('hidden'); }});
+                t.btn.className = "py-3 text-sm font-bold text-teal-600 border-b-2 border-teal-600";
                 t.wrapper.classList.remove('hidden');
-                if (t.btn === document.getElementById('tab-calendar') && calendar) calendar.updateSize();
                 if (t.render) t.render();
             });
         });
@@ -440,8 +262,6 @@
             allEventsCache = data || [];
             document.getElementById('stat-total-events').textContent = allEventsCache.length;
             if (calendar) calendar.refetchEvents();
-            renderTasks();
-            renderReports();
         }
 
         function initCalendar() {
@@ -449,41 +269,21 @@
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
                 initialView: 'dayGridMonth',
                 locale: 'fi',
-                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
                 events: allEventsCache.map(ev => ({
                     id: ev.id,
-                    title: `[${ev.cabin_name || 'Mökki'}] ${ev.title} (${ev.category})`,
-                    start: ev.check_in || ev.date,
-                    end: ev.check_out || ev.date,
-                    backgroundColor: ev.completed ? '#94a3b8' : (ev.category === 'siivous' ? '#0d9488' : ev.category === 'tarkastus' ? '#6366f1' : '#f59e0b'),
-                    borderColor: 'transparent',
-                    extendedProps: { cabin: ev.cabin_name, category: ev.category, linens: ev.linens, notes: ev.notes, checkIn: ev.check_in, checkOut: ev.check_out, completed: ev.completed }
-                })),
-                eventClick: (info) => {
-                    const p = info.event.extendedProps;
-                    document.getElementById('event-id').value = info.event.id;
-                    document.getElementById('event-cabin').value = p.cabin || '';
-                    document.getElementById('event-check-in-date').value = p.checkIn ? p.checkIn.split('T')[0] : '';
-                    document.getElementById('event-check-out-date').value = p.checkOut ? p.checkOut.split('T')[0] : '';
-                    document.getElementById('event-category').value = p.category || 'varaus';
-                    document.getElementById('event-linens').value = p.linens || 0;
-                    document.getElementById('event-notes').value = p.notes || '';
-                    document.getElementById('delete-event-btn').classList.remove('hidden');
-                    document.getElementById('event-modal').classList.remove('hidden');
-                }
+                    title: `[${ev.cabin_name}] ${ev.title} (${ev.category})`,
+                    start: ev.check_out || ev.date,
+                    backgroundColor: ev.completed ? '#94a3b8' : (ev.category === 'siivous' ? '#0d9488' : '#6366f1')
+                }))
             });
             calendar.render();
         }
 
         function renderTasks() {
-            const dateInput = document.getElementById('task-date-picker');
-            if (!dateInput) return;
-            const date = dateInput.value;
+            const date = document.getElementById('task-date-picker').value;
             const tasks = allEventsCache.filter(ev => (ev.category === 'siivous' || ev.category === 'tarkastus') && (ev.check_out?.startsWith(date) || ev.date === date));
             
             const list = document.getElementById('daily-tasks-list');
-            if (!list) return;
-
             if (tasks.length === 0) {
                 list.innerHTML = `<p class="text-sm text-slate-500">Ei siivous- tai tarkastustehtäviä valitulle päivälle.</p>`;
                 return;
@@ -493,12 +293,10 @@
                 <div class="p-4 bg-white border ${ev.completed ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-200'} rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <div class="flex items-center space-x-2">
-                            <span class="px-2.5 py-0.5 text-xs font-bold uppercase rounded bg-teal-50 text-teal-700">${ev.category}</span>
+                            <span class="px-2 py-0.5 text-xs font-bold uppercase rounded bg-teal-50 text-teal-700">${ev.category}</span>
                             <span class="font-bold text-slate-900">${ev.cabin_name}</span>
-                            ${ev.completed ? '<span class="text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">Tehty</span>' : ''}
                         </div>
-                        <div class="text-xs text-slate-500 mt-1">Check-out: ${ev.check_out || '-'} | Liinavaatteita: ${ev.linens || 0} kpl</div>
-                        ${ev.notes ? `<div class="text-xs text-slate-600 italic mt-1">Lisätieto: \${ev.notes}</div>` : ''}
+                        <div class="text-xs text-slate-500 mt-1">Liinavaatteita: ${ev.linens || 0} kpl | ${ev.notes || 'Ei lisätietoja'}</div>
                     </div>
                     <button onclick="toggleComplete('${ev.id}', ${ev.completed})" class="px-4 py-2.5 ${ev.completed ? 'bg-slate-200 text-slate-700' : 'bg-emerald-600 hover:bg-emerald-700 text-white'} rounded-xl text-sm font-semibold transition shadow-sm">
                         ${ev.completed ? 'Merkitse kesken' : 'Kuittaa mökki OK'}
@@ -510,32 +308,26 @@
         window.toggleComplete = async function(id, currentStatus) {
             await supabaseClient.from('events').update({ completed: !currentStatus }).eq('id', id);
             await loadEvents();
+            renderTasks();
         }
 
         function renderReports() {
-            const monthInput = document.getElementById('report-month-picker');
-            if (!monthInput) return;
-            const month = monthInput.value;
+            const month = document.getElementById('report-month-picker').value;
             const events = allEventsCache.filter(ev => (ev.check_out || ev.date || '').startsWith(month));
             
             const content = document.getElementById('monthly-reports-content');
-            if (!content) return;
-
             if (events.length === 0) {
                 content.innerHTML = `<p class="text-sm text-slate-500">Ei tapahtumia valitulla kuukaudella.</p>`;
                 return;
             }
 
-            let totalLinens = events.reduce((sum, ev) => sum + (ev.linens || 0), 0);
             content.innerHTML = `
-                <div class="space-y-3">
-                    <div class="p-3 bg-teal-50 border border-teal-100 rounded-xl text-xs flex justify-between">
-                        <span>Kuukauden merkinnät yhteensä: <strong>${events.length} kpl</strong></span>
-                        <span>Liinavaatteita yhteensä: <strong class="text-teal-900">${totalLinens} kpl</strong></span>
-                    </div>
+                <div class="space-y-2">
+                    <p class="text-xs font-bold text-slate-400 uppercase">Kuukauden merkinnät yhteensä: ${events.length}</p>
                     ${events.map(ev => `
                         <div class="p-3 bg-slate-50 border rounded-xl text-xs flex justify-between items-center">
-                            <div><strong class="text-slate-800">[\${ev.cabin_name}]</strong> ${ev.title} (${ev.category}) - ${ev.check_out \vert{}\vert{} ev.date}</div>${ev.linens ? `<span class="text-teal-700 font-semibold">${ev.linens} liinavaatetta</span>` : ''}
+                            <div><strong class="text-slate-800">\${ev.cabin_name}</strong> - ${ev.title} (${ev.category})</div>
+                            <div class="text-teal-700 font-semibold">\${ev.check_out || ev.date}</div>
                         </div>
                     `).join('')}
                 </div>
@@ -545,7 +337,6 @@
         async function renderCabinsList() {
             const { data } = await supabaseClient.from('cabins').select('*');
             const list = document.getElementById('cabins-list');
-            if (!list) return;
             if (!data || data.length === 0) {
                 list.innerHTML = `<p class="text-xs text-slate-500">Ei mökkejä.</p>`;
                 return;
@@ -558,68 +349,28 @@
             `).join('');
         }
 
-        document.getElementById('open-modal-btn').addEventListener('click', () => {
-            document.getElementById('event-form').reset();
-            document.getElementById('event-id').value = '';
-            document.getElementById('delete-event-btn').classList.add('hidden');
-            document.getElementById('event-modal').classList.remove('hidden');
-        });
-
+        document.getElementById('open-modal-btn').addEventListener('click', () => document.getElementById('event-modal').classList.remove('hidden'));
         document.getElementById('cancel-modal-btn').addEventListener('click', () => document.getElementById('event-modal').classList.add('hidden'));
-
-        document.getElementById('delete-event-btn').addEventListener('click', async () => {
-            const id = document.getElementById('event-id').value;
-            if (id && confirm('Haluatko varmasti poistaa tämän merkinnän?')) {
-                await supabaseClient.from('events').delete().eq('id', id);
-                document.getElementById('event-modal').classList.add('hidden');
-                loadEvents();
-            }
-        });
 
         document.getElementById('event-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const id = document.getElementById('event-id').value;
             const cabin = document.getElementById('event-cabin').value;
             const category = document.getElementById('event-category').value;
-            const checkIn = document.getElementById('event-check-in-date').value;
-            const checkOut = document.getElementById('event-check-out-date').value;
+            const date = document.getElementById('event-check-out-date').value;
 
-            const eventData = {
+            await supabaseClient.from('events').insert([{
                 title: category.charAt(0).toUpperCase() + category.slice(1),
                 cabin_name: cabin,
                 category: category,
-                date: checkIn,
-                check_in: checkIn ? `${checkIn}T14:00` : null,
-                check_out: checkOut ? `${checkOut}T10:00` : null,
+                date: date,
+                check_out: `${date}T10:00`,
                 linens: parseInt(document.getElementById('event-linens').value) || 0,
                 notes: document.getElementById('event-notes').value,
                 user_id: currentUser.id
-            };
-
-            if (id) {
-                await supabaseClient.from('events').update(eventData).eq('id', id);
-            } else {
-                await supabaseClient.from('events').insert([eventData]);
-            }
+            }]);
 
             document.getElementById('event-modal').classList.add('hidden');
             loadEvents();
-        });
-
-        document.getElementById('cabin-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('new-cabin-name').value;
-            const email = document.getElementById('new-cabin-email').value;
-            const { error } = await supabaseClient.rpc('add_cabin_by_email', { cabin_name: name, owner_email: email });
-            if (error) {
-                alert('Virhe mökin lisäyksessä: ' + error.message);
-            } else {
-                document.getElementById('new-cabin-name').value = '';
-                document.getElementById('new-cabin-email').value = '';
-                loadCabins();
-                renderCabinsList();
-                alert('Mökki lisätty onnistuneesti!');
-            }
         });
     </script>
 </body>
