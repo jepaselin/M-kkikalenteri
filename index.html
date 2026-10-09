@@ -19,7 +19,7 @@
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
 
-    <!-- LOGIN / REGISTER VIEW -->
+    <!-- LOGIN / REGISTER / UPDATE PASSWORD VIEW -->
     <div id="auth-container" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 overflow-hidden relative">
             <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-teal-500 to-indigo-600"></div>
@@ -31,8 +31,9 @@
                 <p id="auth-subtitle" class="text-sm text-slate-500 mt-1">Kirjaudu sisään hallitaksesi varauksia</p>
             </div>
 
+            <!-- Standard Auth Form -->
             <form id="auth-form" class="space-y-4">
-                <div>
+                <div id="email-field-container">
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Sähköpostiosoite</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-envelope"></i></span>
@@ -55,6 +56,21 @@
 
                 <button type="submit" id="auth-submit-btn" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-lg shadow-teal-600/20 transition duration-200">
                     Kirjaudu sisään
+                </button>
+            </form>
+
+            <!-- Update Password Form (Hidden by default, shown via recovery link) -->
+            <form id="update-password-form" class="hidden space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Uusi salasana</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-lock"></i></span>
+                        <input type="password" id="new-password" required class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition" placeholder="Syötä uusi salasana">
+                    </div>
+                </div>
+                <div id="update-error" class="hidden text-xs text-rose-500 bg-rose-50 border border-rose-100 p-3 rounded-xl font-medium"></div>
+                <button type="submit" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-lg transition duration-200">
+                    Tallenna uusi salasana
                 </button>
             </form>
 
@@ -342,6 +358,7 @@
         let calendar = null;
         let isRegisterMode = false;
         let isForgotPasswordMode = false;
+        let isPasswordRecoveryMode = false;
         let allEventsCache = [];
         let allCabinsCache = [];
 
@@ -349,15 +366,18 @@
         const authContainer = document.getElementById('auth-container');
         const appContainer = document.getElementById('app-container');
         const authForm = document.getElementById('auth-form');
+        const updatePasswordForm = document.getElementById('update-password-form');
+        const emailFieldContainer = document.getElementById('email-field-container');
+        const passwordFieldContainer = document.getElementById('password-field-container');
         const authTitle = document.getElementById('auth-title');
         const authSubtitle = document.getElementById('auth-subtitle');
         const authSubmitBtn = document.getElementById('auth-submit-btn');
         const toggleAuthModeBtn = document.getElementById('toggle-auth-mode');
         const backToLoginBtn = document.getElementById('back-to-login-btn');
         const forgotPasswordLink = document.getElementById('forgot-password-link');
-        const passwordFieldContainer = document.getElementById('password-field-container');
         const authError = document.getElementById('auth-error');
         const authSuccess = document.getElementById('auth-success');
+        const updateError = document.getElementById('update-error');
         const logoutBtn = document.getElementById('logout-btn');
         const userRoleBadge = document.getElementById('user-role-badge');
         
@@ -387,23 +407,30 @@
         const eventForm = document.getElementById('event-form');
 
         window.addEventListener('DOMContentLoaded', async () => {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
-                currentUser = session.user;
-                showApp();
-            } else {
-                showAuth();
-            }
-
-            supabaseClient.auth.onAuthStateChange((event, session) => {
-                if (session) {
-                    currentUser = session.user;
-                    showApp();
+            supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                if (event === "PASSWORD_RECOVERY") {
+                    isPasswordRecoveryMode = true;
+                    showUpdatePasswordView();
+                } else if (session) {
+                    if (!isPasswordRecoveryMode) {
+                        currentUser = session.user;
+                        showApp();
+                    }
                 } else {
-                    currentUser = null;
-                    showAuth();
+                    if (!isPasswordRecoveryMode) {
+                        currentUser = null;
+                        showAuth();
+                    }
                 }
             });
+
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session && !isPasswordRecoveryMode) {
+                currentUser = session.user;
+                showApp();
+            } else if (!isPasswordRecoveryMode) {
+                showAuth();
+            }
 
             const todayStr = new Date().toISOString().split('T')[0];
             const currentMonthStr = todayStr.slice(0, 7);
@@ -417,6 +444,17 @@
         function showAuth() {
             authContainer.classList.remove('hidden');
             appContainer.classList.add('hidden');
+        }
+
+        function showUpdatePasswordView() {
+            authContainer.classList.remove('hidden');
+            appContainer.classList.add('hidden');
+            authForm.classList.add('hidden');
+            updatePasswordForm.classList.remove('hidden');
+            authTitle.textContent = "Vaihda uusi salasana";
+            authSubtitle.textContent = "Kirjoita uusi salasana tilillesi";
+            toggleAuthModeBtn.classList.add('hidden');
+            backToLoginBtn.classList.add('hidden');
         }
 
         async function showApp() {
@@ -544,6 +582,21 @@
                     authError.textContent = "Virhe kirjautumisessa: tarkista sähköposti ja salasana.";
                     authError.classList.remove('hidden');
                 }
+            }
+        });
+
+        updatePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            updateError.classList.add('hidden');
+            const newPassword = document.getElementById('new-password').value;
+
+            const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+            if (error) {
+                updateError.textContent = "Virhe: " + error.message;
+                updateError.classList.remove('hidden');
+            } else {
+                alert('Salasana vaihdettu onnistuneesti! Voit nyt kirjautua sisään.');
+                window.location.href = window.location.pathname;
             }
         });
 
