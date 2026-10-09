@@ -39,31 +39,24 @@
                         <input type="email" id="email" required class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition" placeholder="esimerkki@email.fi">
                     </div>
                 </div>
-                <div id="password-field-container">
+                <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Salasana</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-lock"></i></span>
-                        <input type="password" id="password" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition" placeholder="••••••••">
-                    </div>
-                    <div class="flex justify-end mt-1">
-                        <button type="button" id="forgot-password-link" class="text-xs text-teal-600 hover:underline font-medium">Unohditko salasanan?</button>
+                        <input type="password" id="password" required class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition" placeholder="••••••••">
                     </div>
                 </div>
 
                 <div id="auth-error" class="hidden text-xs text-rose-500 bg-rose-50 border border-rose-100 p-3 rounded-xl font-medium"></div>
-                <div id="auth-success" class="hidden text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 p-3 rounded-xl font-medium"></div>
 
                 <button type="submit" id="auth-submit-btn" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-lg shadow-teal-600/20 transition duration-200">
                     Kirjaudu sisään
                 </button>
             </form>
 
-            <div class="mt-6 text-center space-y-2">
-                <button type="button" id="toggle-auth-mode" class="block w-full text-xs text-slate-500 hover:text-teal-600 font-medium transition">
+            <div class="mt-6 text-center">
+                <button type="button" id="toggle-auth-mode" class="text-xs text-slate-500 hover:text-teal-600 font-medium transition">
                     Eikö sinulla ole vielä tiliä? <span class="text-teal-600 font-bold underline">Rekisteröidy</span>
-                </button>
-                <button type="button" id="back-to-login-btn" class="hidden block w-full text-xs text-teal-600 font-bold underline transition">
-                    Takaisin kirjautumiseen
                 </button>
             </div>
         </div>
@@ -341,7 +334,6 @@
         let currentUser = null;
         let calendar = null;
         let isRegisterMode = false;
-        let isForgotPasswordMode = false;
         let allEventsCache = [];
         let allCabinsCache = [];
 
@@ -353,11 +345,7 @@
         const authSubtitle = document.getElementById('auth-subtitle');
         const authSubmitBtn = document.getElementById('auth-submit-btn');
         const toggleAuthModeBtn = document.getElementById('toggle-auth-mode');
-        const backToLoginBtn = document.getElementById('back-to-login-btn');
-        const forgotPasswordLink = document.getElementById('forgot-password-link');
-        const passwordFieldContainer = document.getElementById('password-field-container');
         const authError = document.getElementById('auth-error');
-        const authSuccess = document.getElementById('auth-success');
         const logoutBtn = document.getElementById('logout-btn');
         const userRoleBadge = document.getElementById('user-role-badge');
         
@@ -424,7 +412,7 @@
             appContainer.classList.remove('hidden');
             
             const isAdmin = currentUser.email === ADMIN_EMAIL;
-            userRoleBadge.textContent = isAdmin ? `Ylläpitäjä (${currentUser.email})` : `Mökin omistaja (${currentUser.email})`;
+            userRoleBadge.textContent = isAdmin ? `Ylläpitäjä (\${currentUser.email})` : `Mökin omistaja (\${currentUser.email})`;
             
             if (isAdmin) {
                 document.getElementById('admin-stat-card').classList.remove('hidden');
@@ -461,32 +449,6 @@
             });
         });
 
-        forgotPasswordLink.addEventListener('click', () => {
-            isForgotPasswordMode = true;
-            isRegisterMode = false;
-            authTitle.textContent = "Palauta salasana";
-            authSubtitle.textContent = "Lähetämme sähköpostiisi palautuslinkin";
-            authSubmitBtn.textContent = "Lähetä palautuslinkki";
-            passwordFieldContainer.classList.add('hidden');
-            toggleAuthModeBtn.classList.add('hidden');
-            backToLoginBtn.classList.remove('hidden');
-            authError.classList.add('hidden');
-            authSuccess.classList.add('hidden');
-        });
-
-        backToLoginBtn.addEventListener('click', () => {
-            isForgotPasswordMode = false;
-            isRegisterMode = false;
-            authTitle.textContent = "Mökkikalenteri";
-            authSubtitle.textContent = "Kirjaudu sisään hallitaksesi varauksia";
-            authSubmitBtn.textContent = "Kirjaudu sisään";
-            passwordFieldContainer.classList.remove('hidden');
-            toggleAuthModeBtn.classList.remove('hidden');
-            backToLoginBtn.classList.add('hidden');
-            authError.classList.add('hidden');
-            authSuccess.classList.add('hidden');
-        });
-
         toggleAuthModeBtn.addEventListener('click', () => {
             isRegisterMode = !isRegisterMode;
             if (isRegisterMode) {
@@ -501,29 +463,12 @@
                 toggleAuthModeBtn.innerHTML = 'Eikö sinulla ole vielä tiliä? <span class="text-teal-600 font-bold underline">Rekisteröidy</span>';
             }
             authError.classList.add('hidden');
-            authSuccess.classList.add('hidden');
         });
 
         authForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             authError.classList.add('hidden');
-            authSuccess.classList.add('hidden');
             const email = document.getElementById('email').value;
-
-            if (isForgotPasswordMode) {
-                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-                    redirectTo: window.location.href
-                });
-                if (error) {
-                    authError.textContent = "Virhe: " + error.message;
-                    authError.classList.remove('hidden');
-                } else {
-                    authSuccess.textContent = "Salasanan palautuslinkki lähetetty sähköpostiisi!";
-                    authSuccess.classList.remove('hidden');
-                }
-                return;
-            }
-
             const password = document.getElementById('password').value;
 
             if (isRegisterMode) {
@@ -690,7 +635,7 @@
 
                         const fcEvents = filtered.map(ev => ({
                             id: ev.id,
-                            title: `[${ev.cabin_name || 'Mökki'}] ${ev.title} (${ev.category})`,
+                            title: `[\${ev.cabin_name || 'Mökki'}] ${ev.title} (${ev.category})`,
                             start: ev.check_in || ev.date,
                             end: ev.check_out || ev.date,
                             backgroundColor: ev.category === 'siivous' ? '#0d9488' : ev.category === 'tarkastus' ? '#6366f1' : '#f59e0b',
@@ -778,9 +723,9 @@
             const [y, m, d] = datePart.split('-');
             if (!y || !m || !d) return str;
             
-            let formatted = `${d}.${m}.${y}`;
+            let formatted = `\${d}.${m}.${y}`;
             if (timePart) {
-                formatted += ` klo ${timePart}`;
+                formatted += ` klo \${timePart}`;
             }
             return formatted;
         }
@@ -798,13 +743,13 @@
                 dailyTasksList.innerHTML = `
                     <div class="p-8 text-center bg-slate-50 border border-slate-200 rounded-xl">
                         <div class="text-slate-400 text-3xl mb-2"><i class="fa-solid fa-clipboard-check"></i></div>
-                        <p class="text-sm font-medium text-slate-600">Ei uloskirjautumisia tai tehtäviä valitulle päivälle (${selectedDate}).</p>
+                        <p class="text-sm font-medium text-slate-600">Ei uloskirjautumisia tai tehtäviä valitulle päivälle (\${selectedDate}).</p>
                     </div>
                 `;
                 return;
             }
 
-            let html = `<div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Uloskirjautumisia / tehtäviä yhteensä: ${matchingEvents.length}</div>`;
+            let html = `<div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Uloskirjautumisia / tehtäviä yhteensä: \${matchingEvents.length}</div>`;
             matchingEvents.forEach(ev => {
                 const checkInFormatted = formatDateTime(ev.check_in);
                 const checkOutFormatted = formatDateTime(ev.check_out);
@@ -820,22 +765,22 @@
                 }
 
                 html += `
-                    <div class="p-4 bg-white border border-slate-200 rounded-xl shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-l-4 ${ev.category === 'siivous' ? 'border-l-teal-600' : ev.category === 'tarkastus' ? 'border-l-indigo-600' : 'border-l-amber-500'}">
+                    <div class="p-4 bg-white border border-slate-200 rounded-xl shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-l-4 \${ev.category === 'siivous' ? 'border-l-teal-600' : ev.category === 'tarkastus' ? 'border-l-indigo-600' : 'border-l-amber-500'}">
                         <div class="space-y-1">
                             <div class="flex items-center space-x-2">
-                                <span class="px-2.5 py-0.5 text-xs font-bold uppercase rounded-lg ${categoryBadgeBg} border flex items-center space-x-1.5">
-                                    <i class="fa-solid ${categoryIcon}"></i>
-                                    <span>${ev.category ? ev.category.toUpperCase() : 'VARAUS'}</span>
+                                <span class="px-2.5 py-0.5 text-xs font-bold uppercase rounded-lg \${categoryBadgeBg} border flex items-center space-x-1.5">
+                                    <i class="fa-solid \${categoryIcon}"></i>
+                                    <span>\${ev.category ? ev.category.toUpperCase() : 'VARAUS'}</span>
                                 </span>
-                                <span class="px-2.5 py-0.5 text-xs font-bold uppercase rounded-lg bg-slate-100 text-slate-700">${ev.cabin_name || 'Mökki'}</span>
-                                <h3 class="font-bold text-slate-900 text-base">${ev.title}</h3>
+                                <span class="px-2.5 py-0.5 text-xs font-bold uppercase rounded-lg bg-slate-100 text-slate-700">\${ev.cabin_name || 'Mökki'}</span>
+                                <h3 class="font-bold text-slate-900 text-base">\${ev.title}</h3>
                             </div>
                             <div class="text-xs text-slate-500 space-x-3 pt-1">
-                                <span><i class="fa-solid fa-right-to-bracket mr-1"></i> Check-in: ${checkInFormatted}</span>
-                                <span><i class="fa-solid fa-right-from-bracket mr-1"></i> Check-out: ${checkOutFormatted}</span>
-                                <span><i class="fa-solid fa-shirt mr-1"></i> Liinavaatteet: <strong>${ev.linens || 0} kpl</strong></span>
+                                <span><i class="fa-solid fa-right-to-bracket mr-1"></i> Check-in: \${checkInFormatted}</span>
+                                <span><i class="fa-solid fa-right-from-bracket mr-1"></i> Check-out: \${checkOutFormatted}</span>
+                                <span><i class="fa-solid fa-shirt mr-1"></i> Liinavaatteet: <strong>\${ev.linens || 0} kpl</strong></span>
                             </div>
-                            ${ev.notes ? `<p class="text-xs text-slate-600 italic bg-slate-50 p-2 rounded-lg mt-2"><i class="fa-solid fa-note-sticky mr-1"></i> \${ev.notes}</p>` : ''}
+                            \${ev.notes ? `<p class="text-xs text-slate-600 italic bg-slate-50 p-2 rounded-lg mt-2"><i class="fa-solid fa-note-sticky mr-1"></i> ${ev.notes}</p>` : ''}
                         </div>
                     </div>
                 `;
@@ -870,28 +815,28 @@
                 monthlyReportsContent.innerHTML = `
                     <div class="p-8 text-center bg-slate-50 border border-slate-200 rounded-xl">
                         <div class="text-slate-400 text-3xl mb-2"><i class="fa-solid fa-chart-bar"></i></div>
-                        <p class="text-sm font-medium text-slate-600">Ei varauksia tai merkintöjä valitulle kuukaudelle (${selectedMonth}).</p>
+                        <p class="text-sm font-medium text-slate-600">Ei varauksia tai merkintöjä valitulle kuukaudelle (\${selectedMonth}).</p>
                     </div>
                 `;
                 return;
             }
 
-            let html = `<div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Yksityiskohtaiset tiedot kuukaudelle: ${selectedMonth}</div>`;
+            let html = `<div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Yksityiskohtaiset tiedot kuukaudelle: \${selectedMonth}</div>`;
             cabinNames.forEach(cabin => {
                 const data = cabins[cabin];
                 
                 const renderEventListItems = (eventsList, label) => {
-                    if (eventsList.length === 0) return `<p class="text-xs text-slate-400 italic">Ei ${label.toLowerCase()}ta.</p>`;
+                    if (eventsList.length === 0) return `<p class="text-xs text-slate-400 italic">Ei \${label.toLowerCase()}ta.</p>`;
                     let listHtml = `<div class="space-y-1.5 mt-1">`;
                     eventsList.forEach(ev => {
                         const dateFormatted = formatDateTime(ev.check_out || ev.date);
                         listHtml += `
                             <div class="text-xs bg-slate-50 p-2 rounded-lg border border-slate-100 flex items-center justify-between">
                                 <div>
-                                    <span class="font-bold text-slate-800">${ev.title}</span> 
-                                    <span class="text-slate-500 ml-1">(${dateFormatted})</span>
+                                    <span class="font-bold text-slate-800">\${ev.title}</span> 
+                                    <span class="text-slate-500 ml-1">(\${dateFormatted})</span>
                                 </div>
-                                ${ev.linens ? `<span class="text-teal-600 font-semibold"><i class="fa-solid fa-shirt mr-1"></i>\${ev.linens} kpl</span>` : ''}
+                                \${ev.linens ? `<span class="text-teal-600 font-semibold"><i class="fa-solid fa-shirt mr-1"></i>${ev.linens} kpl</span>` : ''}
                             </div>
                         `;
                     });
@@ -904,9 +849,9 @@
                         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                             <h3 class="font-bold text-slate-900 text-lg flex items-center space-x-2">
                                 <i class="fa-solid fa-house text-teal-600"></i>
-                                <span>${cabin}</span>
+                                <span>\${cabin}</span>
                             </h3>
-                            <span class="px-3 py-1 bg-teal-50 text-teal-700 text-xs font-bold rounded-xl border border-teal-100">Yhteensä ${data.total} merkintää</span>
+                            <span class="px-3 py-1 bg-teal-50 text-teal-700 text-xs font-bold rounded-xl border border-teal-100">Yhteensä \${data.total} merkintää</span>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -915,10 +860,10 @@
                                 <div class="flex items-center justify-between">
                                     <span class="text-xs text-teal-700 uppercase font-bold flex items-center space-x-1">
                                         <i class="fa-solid fa-broom"></i>
-                                        <span>Siivoukset (${data.cleanings.length})</span>
+                                        <span>Siivoukset (\${data.cleanings.length})</span>
                                     </span>
                                 </div>
-                                ${renderEventListItems(data.cleanings, 'Siivous')}
+                                \${renderEventListItems(data.cleanings, 'Siivous')}
                             </div>
 
                             <!-- Tarkastukset -->
@@ -926,10 +871,10 @@
                                 <div class="flex items-center justify-between">
                                     <span class="text-xs text-indigo-700 uppercase font-bold flex items-center space-x-1">
                                         <i class="fa-solid fa-clipboard-check"></i>
-                                        <span>Tarkastukset (${data.inspections.length})</span>
+                                        <span>Tarkastukset (\${data.inspections.length})</span>
                                     </span>
                                 </div>
-                                ${renderEventListItems(data.inspections, 'Tarkastus')}
+                                \${renderEventListItems(data.inspections, 'Tarkastus')}
                             </div>
 
                             <!-- Varaukset -->
@@ -937,16 +882,16 @@
                                 <div class="flex items-center justify-between">
                                     <span class="text-xs text-amber-700 uppercase font-bold flex items-center space-x-1">
                                         <i class="fa-solid fa-calendar-check"></i>
-                                        <span>Varaukset (${data.bookings.length})</span>
+                                        <span>Varaukset (\${data.bookings.length})</span>
                                     </span>
                                 </div>
-                                ${renderEventListItems(data.bookings, 'Varaus')}
+                                \${renderEventListItems(data.bookings, 'Varaus')}
                             </div>
                         </div>
 
                         <div class="pt-2 text-xs text-slate-500 flex items-center justify-between bg-teal-50/40 p-3 rounded-xl border border-teal-100">
                             <span>Liinavaatteet yhteensä tässä kuussa:</span>
-                            <strong class="text-teal-900 font-black text-sm">${data.linens} kpl</strong>
+                            <strong class="text-teal-900 font-black text-sm">\${data.linens} kpl</strong>
                         </div>
                     </div>
                 `;
@@ -956,7 +901,7 @@
 
         cabinForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const name = document.getElementById('new-cabin-name').value;
+            const name = document.getElementById('new-cabin-name`').value;
             const email = document.getElementById('new-cabin-email').value;
 
             const { data, error } = await supabaseClient.rpc('add_cabin_by_email', { 
