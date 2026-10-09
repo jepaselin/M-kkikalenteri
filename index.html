@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mökkikalenteri</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FullCalendar CSS & JS -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css' rel='stylesheet' />
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800">
+
+    <!-- LOGIN / REGISTER VIEW -->
+    <div id="auth-container" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 overflow-hidden relative">
+            <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-teal-500 to-indigo-600"></div>
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-teal-50 text-teal-600 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-4 shadow-inner">
+                    <i class="fa-solid fa-mountain-sun"></i>
+                </div>
+                <h1 id="auth-title" class="text-2xl font-bold text-slate-900">Mökkikalenteri</h1>
+                <p id="auth-subtitle" class="text-sm text-slate-500 mt-1">Kirjaudu sisään hallitaksesi varauksia</p>
+            </div>
+
+            <form id="auth-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Sähköpostiosoite</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-envelope"></i></span>
+                        <input type="email" id="email" required class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition" placeholder="esimerkki@email.fi">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Salasana</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-lock"></i></span>
+                        <input type="password" id="password" required class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition" placeholder="••••••••">
+                    </div>
+                </div>
+
+                <div id="auth-error" class="hidden text-xs text-rose-500 bg-rose-50 border border-rose-100 p-3 rounded-xl font-medium"></div>
+
+                <button type="submit" id="auth-submit-btn" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-lg shadow-teal-600/20 transition duration-200">
+                    Kirjaudu sisään
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <button type="button" id="toggle-auth-mode" class="text-xs text-slate-500 hover:text-teal-600 font-medium transition">
+                    Eikö sinulla ole vielä tiliä? <span class="text-teal-600 font-bold underline">Rekisteröidy</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP VIEW -->
+    <div id="app-container" class="hidden min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-teal-600 text-white rounded-xl flex items-center justify-center text-lg shadow-md shadow-teal-600/20">
+                        <i class="fa-solid fa-calendar-days"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-900 leading-tight">Mökkikalenteri</h1>
+                        <p id="user-role-badge" class="text-xs font-medium text-slate-500">Ladataan...</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <button id="open-modal-btn" class="hidden bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-md shadow-teal-600/20 transition flex items-center space-x-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Lisää uusi varaus</span>
+                    </button>
+                    <button id="logout-btn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-4 py-2.5 rounded-xl transition flex items-center space-x-2">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Kirjaudu ulos</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Admin Navigation Tabs (Only for Admin) -->
+        <div id="admin-tabs-container" class="hidden bg-white border-b border-slate-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-8">
+                <button id="tab-calendar" class="py-3 text-sm font-bold text-teal-600 border-b-2 border-teal-600 transition flex items-center space-x-2">
+                    <i class="fa-solid fa-calendar"></i>
+                    <span>Kalenteri</span>
+                </button>
+                <button id="tab-tasks" class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition flex items-center space-x-2">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>Päivän tehtävät</span>
+                </button>
+                <button id="tab-reports" class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition flex items-center space-x-2">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Kuukausitilastot</span>
+                </button>
+                <button id="tab-cabins" class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition flex items-center space-x-2">
+                    <i class="fa-solid fa-house-chimney"></i>
+                    <span>Mökkien hallinta</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Sidebar / Stats & Info -->
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Varaukset & Tilastot</h2>
+                    <div class="space-y-4">
+                        <div class="p-4 bg-teal-50 border border-teal-100 rounded-xl">
+                            <div class="text-xs font-semibold text-teal-600 uppercase">Omia merkintöjä / varauksia</div>
+                            <div id="stat-my-events" class="text-2xl font-black text-teal-900 mt-1">0</div>
+                        </div>
+                        <div id="admin-stat-card" class="hidden p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
+                            <div class="text-xs font-semibold text-indigo-600 uppercase">Kaikki varaukset yhteensä</div>
+                            <div id="stat-total-events" class="text-2xl font-black text-indigo-900 mt-1">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-6 shadow-xl">
+                    <h3 class="font-bold text-base mb-2">Ohjeet</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Omistajana näet omat mökkisi ja voit tehdä varauksia. Ylläpitäjä voi hallita mökkejä sähköpostilla ja tarkastella tilastoja.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Main View Area -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Calendar View Wrapper -->
+                <div id="view-calendar-wrapper" class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
+                    <div id="calendar"></div>
+                </div>
+
+                <!-- Daily Tasks View Wrapper -->
+                <div id="view-tasks-wrapper" class="hidden bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-100">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900">Päivän siivoukset ja tarkastukset</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Näyttää varaukset ja tehtävät valittuna päivänä</p>
+                        </div>
+                        <div>
+                            <input type="date" id="task-date-picker" class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        </div>
+                    </div>
+                    <div id="daily-tasks-list" class="space-y-3"></div>
+                </div>
+
+                <!-- Monthly Reports View Wrapper -->
+                <div id="view-reports-wrapper" class="hidden bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-100">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900">Kuukausitilastot ja tarkat päivämäärät</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Tarkastele kuukauden tapahtumia ja niiden tarkkoja ajankohtia</p>
+                        </div>
+                        <div>
+                            <input type="month" id="report-month-picker" class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        </div>
+                    </div>
+                    <div id="monthly-reports-content" class="space-y-4"></div>
+                </div>
+
+                <!-- Cabins Management View Wrapper (Admin only) -->
+                <div id="view-cabins-wrapper" class="hidden bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-6">
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900">Mökkien hallinta</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Luo uusia mökkejä antamalla omistajan sähköposti</p>
+                        </div>
+                    </div>
+
+                    <form id="cabin-form" class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Mökin nimi</label>
+                            <input type="text" id="new-cabin-name" required class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Esim. Metsätupa">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Omistajan sähköposti</label>
+                            <input type="email" id="new-cabin-email" required class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="omistaja@email.fi">
+                        </div>
+                        <div>
+                            <button type="submit" class="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl shadow-md transition">Lisää mökki</button>
+                        </div>
+                    </form>
+
+                    <div id="cabins-list" class="space-y-3 pt-2">
+                        <!-- Rendered cabins list -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ADD / EDIT EVENT MODAL -->
+    <div id="event-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-2 bg-teal-600"></div>
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-slate-900">Lisää uusi varaus</h2>
+                <button type="button" id="close-modal-btn" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="event-form" class="space-y-4">
+                <input type="hidden" id="event-id">
+                
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Mökki</label>
+                    <select id="event-cabin" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Check-in (Pvm & klo)</label>
+                        <div class="flex space-x-2">
+                            <input type="date" id="event-check-in-date" required class="w-2/3 px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">
+                            <select id="event-check-in-hour" class="w-1/3 px-2 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">
+                                <option value="00:00">00:00</option>
+                                <option value="01:00">01:00</option>
+                                <option value="02:00">02:00</option>
+                                <option value="03:00">03:00</option>
+                                <option value="04:00">04:00</option>
+                                <option value="05:00">05:00</option>
+                                <option value="06:00">06:00</option>
+                                <option value="07:00">07:00</option>
+                                <option value="08:00">08:00</option>
+                                <option value="09:00">09:00</option>
+                                <option value="10:00">10:00</option>
+                                <option value="11:00">11:00</option>
+                                <option value="12:00">12:00</option>
+                                <option value="13:00">13:00</option>
+                                <option value="14:00" selected>14:00</option>
+                                <option value="15:00">15:00</option>
+                                <option value="16:00">16:00</option>
+                                <option value="17:00">17:00</option>
+                                <option value="18:00">18:00</option>
+                                <option value="19:00">19:00</option>
+                                <option value="20:00">20:00</option>
+                                <option value="21:00">21:00</option>
+                                <option value="22:00">22:00</option>
+                                <option value="23:00">23:00</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Check-out (Pvm & klo)</label>
+                        <div class="flex space-x-2">
+                            <input type="date" id="event-check-out-date" required class="w-2/3 px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">
+                            <select id="event-check-out-hour" class="w-1/3 px-2 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">
+                                <option value="00:00">00:00</option>
+                                <option value="01:00">01:00</option>
+                                <option value="02:00">02:00</option>
+                                <option value="03:00">03:00</option>
+                                <option value="04:00">04:00</option>
+                                <option value="05:00">05:00</option>
+                                <option value="06:00">06:00</option>
+                                <option value="07:00">07:00</option>
+                                <option value="08:00">08:00</option>
+                                <option value="09:00">09:00</option>
+                                <option value="10:00" selected>10:00</option>
+                                <option value="11:00">11:00</option>
+                                <option value="12:00">12:00</option>
+                                <option value="13:00">13:00</option>
+                                <option value="14:00">14:00</option>
+                                <option value="15:00">15:00</option>
+                                <option value="16:00">16:00</option>
+                                <option value="17:00">17:00</option>
+                                <option value="18:00">18:00</option>
+                                <option value="19:00">19:00</option>
+                                <option value="20:00">20:00</option>
+                                <option value="21:00">21:00</option>
+                                <option value="22:00">22:00</option>
+                                <option value="23:00">23:00</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Kategoria</label>
+                        <select id="event-category" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">
+                            <option value="siivous">Siivous</option>
+                            <option value="tarkastus">Tarkastus</option>
+                            <option value="varaus">Varaus</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Liinavaatteet (kpl)</label>
+                        <input type="number" id="event-linens" min="0" value="0" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Lisätietoa</label>
+                    <textarea id="event-notes" rows="3" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition" placeholder="Kirjoita tähän tarvittaessa lisätietoja..."></textarea>
+                </div>
+
+                <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+                    <button type="button" id="delete-event-btn" class="hidden px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-semibold rounded-xl transition">Poista merkintä</button>
+                    <div class="flex items-center space-x-3 ml-auto">
+                        <button type="button" id="cancel-modal-btn" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition">Peruuta</button>
+                        <button type="submit" class="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl shadow-lg transition">Tallenna varaus</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script>
+        const SUPABASE_URL = "https://onojghiuzbahaqgpdyfn.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_A8y0pkolw0Rrf6tD4TrmEA_lkEpU8uk";
+        const ADMIN_EMAIL = "jepa.selin@gmail.com";
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let calendar = null;
+        let isRegisterMode = false;
+        let allEventsCache = [];
+        let allCabinsCache = [];
+
+        // DOM Elements
+        const authContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        const authForm = document.getElementById('auth-form');
+        const authTitle = document.getElementById('auth-title');
+        const authSubtitle = document.getElementById('auth-subtitle');
+        const authSubmitBtn = document.getElementById('auth-submit-btn');
+        const toggleAuthModeBtn = document.getElementById('toggle-auth-mode');
+        const authError = document.getElementById('auth-error');
+        const logoutBtn = document.getElementById('logout-btn');
+        const userRoleBadge = document.getElementById('user-role-badge');
+        
+        const adminTabsContainer = document.getElementById('admin-tabs-container');
+        const tabCalendar = document.getElementById('tab-calendar');
+        const tabTasks = document.getElementById('tab-tasks');
+        const tabReports = document.getElementById('tab-reports');
+        const tabCabins = document.getElementById('tab-cabins');
+        
+        const viewCalendarWrapper = document.getElementById('view-calendar-wrapper');
+        const viewTasksWrapper = document.getElementById('view-tasks-wrapper');
+        const viewReportsWrapper = document.getElementById('view-reports-wrapper');
+        const viewCabinsWrapper = document.getElementById('view-cabins-wrapper');
+        
+        const taskDatePicker = document.getElementById('task-date-picker');
+        const dailyTasksList = document.getElementById('daily-tasks-list');
+        const reportMonthPicker = document.getElementById('report-month-picker');
+        const monthlyReportsContent = document.getElementById('monthly-reports-content');
+        const cabinsList = document.getElementById('cabins-list');
+        const cabinForm = document.getElementById('cabin-form');
+        const eventCabinSelect = document.getElementById('event-cabin');
+
+        const eventModal = document.getElementById('event-modal');
+        const openModalBtn = document.getElementById('open-modal-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const cancelModalBtn = document.getElementById('cancel-modal-btn');
+        const eventForm = document.getElementById('event-form');
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                currentUser = session.user;
+                showApp();
+            } else {
+                showAuth();
+            }
+
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                if (session) {
+                    currentUser = session.user;
+                    showApp();
+                } else {
+                    currentUser = null;
+                    showAuth();
+                }
+            });
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const currentMonthStr = todayStr.slice(0, 7);
+            taskDatePicker.value = todayStr;
+            taskDatePicker.addEventListener('change', renderDailyTasks);
+
+            reportMonthPicker.value = currentMonthStr;
+            reportMonthPicker.addEventListener('change', renderMonthlyReports);
+        });
+
+        function showAuth() {
+            authContainer.classList.remove('hidden');
+            appContainer.classList.add('hidden');
+        }
+
+        async function showApp() {
+            authContainer.classList.add('hidden');
+            appContainer.classList.remove('hidden');
+            
+            const isAdmin = currentUser.email === ADMIN_EMAIL;
+            userRoleBadge.textContent = isAdmin ? `Ylläpitäjä (\${currentUser.email})` : `Mökin omistaja (\${currentUser.email})`;
+            
+            if (isAdmin) {
+                document.getElementById('admin-stat-card').classList.remove('hidden');
+                adminTabsContainer.classList.remove('hidden');
+            }
+
+            openModalBtn.classList.remove('hidden');
+
+            await loadCabins();
+            initCalendar();
+            loadEvents();
+        }
+
+        // Tab Switching
+        const tabs = [
+            { btn: tabCalendar, wrapper: viewCalendarWrapper },
+            { btn: tabTasks, wrapper: viewTasksWrapper, render: renderDailyTasks },
+            { btn: tabReports, wrapper: viewReportsWrapper, render: renderMonthlyReports },
+            { btn: tabCabins, wrapper: viewCabinsWrapper, render: renderCabinsList }
+        ];
+
+        tabs.forEach(tab => {
+            if (!tab.btn) return;
+            tab.btn.addEventListener('click', () => {
+                tabs.forEach(t => {
+                    if (!t.btn) return;
+                    t.btn.className = "py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition flex items-center space-x-2";
+                    t.wrapper.classList.add('hidden');
+                });
+                tab.btn.className = "py-3 text-sm font-bold text-teal-600 border-b-2 border-teal-600 transition flex items-center space-x-2";
+                tab.wrapper.classList.remove('hidden');
+                if (tab.btn === tabCalendar && calendar) calendar.updateSize();
+                if (tab.render) tab.render();
+            });
+        });
+
+        toggleAuthModeBtn.addEventListener('click', () => {
+            isRegisterMode = !isRegisterMode;
+            if (isRegisterMode) {
+                authTitle.textContent = "Luo uusi tili";
+                authSubtitle.textContent = "Rekisteröidy mökin omistajaksi";
+                authSubmitBtn.textContent = "Rekisteröidy";
+                toggleAuthModeBtn.innerHTML = 'Onko sinulla jo tili? <span class="text-teal-600 font-bold underline">Kirjaudu sisään</span>';
+            } else {
+                authTitle.textContent = "Mökkikalenteri";
+                authSubtitle.textContent = "Kirjaudu sisään hallitaksesi varauksia";
+                authSubmitBtn.textContent = "Kirjaudu sisään";
+                toggleAuthModeBtn.innerHTML = 'Eikö sinulla ole vielä tiliä? <span class="text-teal-600 font-bold underline">Rekisteröidy</span>';
+            }
+            authError.classList.add('hidden');
+        });
+
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            authError.classList.add('hidden');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if (isRegisterMode) {
+                const { error } = await supabaseClient.auth.signUp({ email, password });
+                if (error) {
+                    authError.textContent = error.message;
+                    authError.classList.remove('hidden');
+                } else {
+                    alert('Rekisteröityminen onnistui! Voit nyt kirjautua sisään.');
+                    isRegisterMode = false;
+                    authTitle.textContent = "Mökkikalenteri";
+                    authSubtitle.textContent = "Kirjaudu sisään hallitaksesi varauksia";
+                    authSubmitBtn.textContent = "Kirjaudu sisään";
+                }
+            } else {
+                const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) {
+                    authError.textContent = "Virhe kirjautumisessa: tarkista sähköposti ja salasana.";
+                    authError.classList.remove('hidden');
+                }
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+        });
+
+        async function loadCabins() {
+            try {
+                const { data, error } = await supabaseClient.from('cabins').select('*');
+                if (error) throw error;
+                allCabinsCache = data || [];
+
+                const isAdmin = currentUser.email === ADMIN_EMAIL;
+                const availableCabins = isAdmin ? allCabinsCache : allCabinsCache.filter(c => c.owner_id === currentUser.id);
+
+                eventCabinSelect.innerHTML = '';
+                if (availableCabins.length === 0) {
+                    eventCabinSelect.innerHTML = '<option value="">Ei mökkejä saatavilla (pyydä adminia lisäämään)</option>';
+                } else {
+                    availableCabins.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.name;
+                        opt.textContent = c.name;
+                        eventCabinSelect.appendChild(opt);
+                    });
+                }
+            } catch (err) {
+                console.error("Virhe mökkien haussa:", err.message);
+            }
+        }
+
+        openModalBtn.addEventListener('click', () => {
+            document.getElementById('event-form').reset();
+            document.getElementById('event-id').value = '';
+            
+            const now = new Date();
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            const todayStr = now.toISOString().split('T')[0];
+            const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+            document.getElementById('event-check-in-date').value = todayStr;
+            document.getElementById('event-check-in-hour').value = "14:00";
+            document.getElementById('event-check-out-date').value = tomorrowStr;
+            document.getElementById('event-check-out-hour').value = "10:00";
+            
+            document.getElementById('delete-event-btn').classList.add('hidden');
+            loadCabins();
+            eventModal.classList.remove('hidden');
+        });
+
+        const closeModal = () => eventModal.classList.add('hidden');
+
+        document.getElementById('delete-event-btn').addEventListener('click', async () => {
+            const id = document.getElementById('event-id').value;
+            if (id && confirm('Haluatko varmasti poistaa tämän merkinnän?')) {
+                await deleteEvent(id);
+                closeModal();
+            }
+        });
+
+        closeModalBtn.addEventListener('click', closeModal);
+        cancelModalBtn.addEventListener('click', closeModal);
+
+        eventForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('event-id').value;
+            const cabin = document.getElementById('event-cabin').value;
+            const category = document.getElementById('event-category').value;
+            const title = category.charAt(0).toUpperCase() + category.slice(1);
+            const checkInDate = document.getElementById('event-check-in-date').value;
+            const checkInHour = document.getElementById('event-check-in-hour').value;
+            const checkIn = checkInDate ? `${checkInDate}T${checkInHour}` : '';
+
+            const checkOutDate = document.getElementById('event-check-out-date').value;
+            const checkOutHour = document.getElementById('event-check-out-hour').value;
+            const checkOut = checkOutDate ? `${checkOutDate}T${checkOutHour}` : '';
+            const linens = parseInt(document.getElementById('event-linens').value) || 0;
+            const notes = document.getElementById('event-notes').value;
+
+            if (!cabin) {
+                alert('Valitse mökki ennen tallennusta!');
+                return;
+            }
+
+            const eventData = {
+                title,
+                cabin_name: cabin,
+                date: checkIn.split('T')[0],
+                check_in: checkIn,
+                check_out: checkOut,
+                category,
+                linens,
+                notes,
+                user_id: currentUser.id
+            };
+
+            let error;
+            if (id) {
+                const res = await supabaseClient.from('events').update(eventData).eq('id', id);
+                error = res.error;
+            } else {
+                const res = await supabaseClient.from('events').insert([eventData]);
+                error = res.error;
+            }
+
+            if (error) {
+                alert('Tallennus epäonnistui: ' + error.message);
+            } else {
+                closeModal();
+                loadEvents();
+            }
+        });
+
+        function initCalendar() {
+            if (calendar) return;
+            const calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek'
+                },
+                locale: 'fi',
+                editable: true,
+                selectable: true,
+                events: async (fetchInfo, successCallback, failureCallback) => {
+                    try {
+                        let query = supabaseClient.from('events').select('*');
+                        const { data, error } = await query;
+                        if (error) throw error;
+
+                        allEventsCache = data || [];
+                        const isAdmin = currentUser.email === ADMIN_EMAIL;
+                        const filtered = isAdmin ? allEventsCache : allEventsCache.filter(ev => ev.user_id === currentUser.id);
+
+                        document.getElementById('stat-my-events').textContent = allEventsCache.filter(ev => ev.user_id === currentUser.id).length;
+                        if (isAdmin) {
+                            document.getElementById('stat-total-events').textContent = allEventsCache.length;
+                        }
+
+                        const fcEvents = filtered.map(ev => ({
+                            id: ev.id,
+                            title: `[\${ev.cabin_name || 'Mökki'}] ${ev.title} (${ev.category})`,
+                            start: ev.check_in || ev.date,
+                            end: ev.check_out || ev.date,
+                            backgroundColor: ev.category === 'siivous' ? '#0d9488' : ev.category === 'tarkastus' ? '#6366f1' : '#f59e0b',
+                            borderColor: 'transparent',
+                            extendedProps: {
+                                cabin: ev.cabin_name || '',
+                                rawTitle: ev.title,
+                                category: ev.category,
+                                linens: ev.linens,
+                                notes: ev.notes,
+                                checkIn: ev.check_in,
+                                checkOut: ev.check_out,
+                                userId: ev.user_id
+                            }
+                        }));
+                        successCallback(fcEvents);
+                    } catch (err) {
+                        failureCallback(err);
+                    }
+                },
+                eventClick: (info) => {
+                    const props = info.event.extendedProps;
+                    const isAdmin = currentUser.email === ADMIN_EMAIL;
+                    
+                    if (props.userId !== currentUser.id && !isAdmin) {
+                        alert('Voit muokata vain omia varauksiasi.');
+                        return;
+                    }
+
+                    document.getElementById('event-id').value = info.event.id;
+                    document.getElementById('event-cabin').value = props.cabin;
+                    
+                    if (props.checkIn) {
+                        const [dPart, tPart] = props.checkIn.split('T');
+                        document.getElementById('event-check-in-date').value = dPart || '';
+                        if (tPart) document.getElementById('event-check-in-hour').value = tPart.substring(0, 5);
+                    } else {
+                        document.getElementById('event-check-in-date').value = '';
+                    }
+                    if (props.checkOut) {
+                        const [dPart, tPart] = props.checkOut.split('T');
+                        document.getElementById('event-check-out-date').value = dPart || '';
+                        if (tPart) document.getElementById('event-check-out-hour').value = tPart.substring(0, 5);
+                    } else {
+                        document.getElementById('event-check-out-date').value = '';
+                    }
+
+                    document.getElementById('event-category').value = props.category || 'varaus';
+                    document.getElementById('event-linens').value = props.linens || 0;
+                    document.getElementById('event-notes').value = props.notes || '';
+                    document.getElementById('delete-event-btn').classList.remove('hidden');
+                    loadCabins();
+                    eventModal.classList.remove('hidden');
+                }
+            });
+            calendar.render();
+        }
+
+        async function loadEvents() {
+            if (calendar) {
+                calendar.refetchEvents();
+            } else {
+                try {
+                    const { data } = await supabaseClient.from('events').select('*');
+                    allEventsCache = data || [];
+                } catch (e) {}
+            }
+        }
+
+        async function deleteEvent(id) {
+            const { error } = await supabaseClient.from('events').delete().eq('id', id);
+            if (error) {
+                alert('Poisto epäonnistui: ' + error.message);
+            } else {
+                loadEvents();
+            }
+        }
+
+        function formatDateTime(str) {
+            if (!str) return '-';
+            const parts = str.split('T');
+            const datePart = parts[0];
+            const timePart = parts[1] ? parts[1].substring(0, 5).replace(':', '.') : '';
+            
+            const [y, m, d] = datePart.split('-');
+            if (!y || !m || !d) return str;
+            
+            let formatted = `\${d}.${m}.${y}`;
+            if (timePart) {
+                formatted += ` klo \${timePart}`;
+            }
+            return formatted;
+        }
+
+        function renderDailyTasks() {
+            const selectedDate = taskDatePicker.value;
+            if (!selectedDate) return;
+
+            const matchingEvents = allEventsCache.filter(ev => {
+                const checkOutDate = ev.check_out ? ev.check_out.split('T')[0] : null;
+                return checkOutDate === selectedDate;
+            });
+
+            if (matchingEvents.length === 0) {
+                dailyTasksList.innerHTML = `
+                    <div class="p-8 text-center bg-slate-50 border border-slate-200 rounded-xl">
+                        <div class="text-slate-400 text-3xl mb-2"><i class="fa-solid fa-clipboard-check"></i></div>
+                        <p class="text-sm font-medium text-slate-600">Ei uloskirjautumisia tai tehtäviä valitulle päivälle (\${selectedDate}).</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `<div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Uloskirjautumisia / tehtäviä yhteensä: \${matchingEvents.length}</div>`;
+            matchingEvents.forEach(ev => {
+                const checkInFormatted = formatDateTime(ev.check_in);
+                const checkOutFormatted = formatDateTime(ev.check_out);
+                
+                let categoryBadgeBg = 'bg-amber-50 text-amber-700 border-amber-200';
+                let categoryIcon = 'fa-calendar-check';
+                if (ev.category === 'siivous') {
+                    categoryBadgeBg = 'bg-teal-50 text-teal-700 border-teal-200';
+                    categoryIcon = 'fa-broom';
+                } else if (ev.category === 'tarkastus') {
+                    categoryBadgeBg = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+                    categoryIcon = 'fa-clipboard-check';
+                }
+
+                html += `
+                    <div class="p-4 bg-white border border-slate-200 rounded-xl shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-l-4 \${ev.category === 'siivous' ? 'border-l-teal-600' : ev.category === 'tarkastus' ? 'border-l-indigo-600' : 'border-l-amber-500'}">
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2.5 py-0.5 text-xs font-bold uppercase rounded-lg \${categoryBadgeBg} border flex items-center space-x-1.5">
+                                    <i class="fa-solid \${categoryIcon}"></i>
+                                    <span>\${ev.category ? ev.category.toUpperCase() : 'VARAUS'}</span>
+                                </span>
+                                <span class="px-2.5 py-0.5 text-xs font-bold uppercase rounded-lg bg-slate-100 text-slate-700">\${ev.cabin_name || 'Mökki'}</span>
+                                <h3 class="font-bold text-slate-900 text-base">\${ev.title}</h3>
+                            </div>
+                            <div class="text-xs text-slate-500 space-x-3 pt-1">
+                                <span><i class="fa-solid fa-right-to-bracket mr-1"></i> Check-in: \${checkInFormatted}</span>
+                                <span><i class="fa-solid fa-right-from-bracket mr-1"></i> Check-out: \${checkOutFormatted}</span>
+                                <span><i class="fa-solid fa-shirt mr-1"></i> Liinavaatteet: <strong>\${ev.linens || 0} kpl</strong></span>
+                            </div>
+                            \${ev.notes ? `<p class="text-xs text-slate-600 italic bg-slate-50 p-2 rounded-lg mt-2"><i class="fa-solid fa-note-sticky mr-1"></i> ${ev.notes}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            dailyTasksList.innerHTML = html;
+        }
+
+        function renderMonthlyReports() {
+            const selectedMonth = reportMonthPicker.value;
+            if (!selectedMonth) return;
+
+            const monthEvents = allEventsCache.filter(ev => {
+                const dateStr = ev.check_out ? ev.check_out.slice(0, 7) : (ev.date ? ev.date.slice(0, 7) : '');
+                return dateStr === selectedMonth;
+            });
+
+            const cabins = {};
+            monthEvents.forEach(ev => {
+                const cabin = ev.cabin_name || 'Muu mökki';
+                if (!cabins[cabin]) {
+                    cabins[cabin] = { total: 0, cleanings: [], inspections: [], bookings: [], linens: 0 };
+                }
+                cabins[cabin].total++;
+                if (ev.category === 'siivous') cabins[cabin].cleanings.push(ev);
+                else if (ev.category === 'tarkastus') cabins[cabin].inspections.push(ev);
+                else cabins[cabin].bookings.push(ev);
+                cabins[cabin].linens += (ev.linens || 0);
+            });
+
+            const cabinNames = Object.keys(cabins);
+            if (cabinNames.length === 0) {
+                monthlyReportsContent.innerHTML = `
+                    <div class="p-8 text-center bg-slate-50 border border-slate-200 rounded-xl">
+                        <div class="text-slate-400 text-3xl mb-2"><i class="fa-solid fa-chart-bar"></i></div>
+                        <p class="text-sm font-medium text-slate-600">Ei varauksia tai merkintöjä valitulle kuukaudelle (\${selectedMonth}).</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `<div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Yksityiskohtaiset tiedot kuukaudelle: \${selectedMonth}</div>`;
+            cabinNames.forEach(cabin => {
+                const data = cabins[cabin];
+                
+                const renderEventListItems = (eventsList, label) => {
+                    if (eventsList.length === 0) return `<p class="text-xs text-slate-400 italic">Ei \${label.toLowerCase()}ta.</p>`;
+                    let listHtml = `<div class="space-y-1.5 mt-1">`;
+                    eventsList.forEach(ev => {
+                        const dateFormatted = formatDateTime(ev.check_out || ev.date);
+                        listHtml += `
+                            <div class="text-xs bg-slate-50 p-2 rounded-lg border border-slate-100 flex items-center justify-between">
+                                <div>
+                                    <span class="font-bold text-slate-800">\${ev.title}</span> 
+                                    <span class="text-slate-500 ml-1">(\${dateFormatted})</span>
+                                </div>
+                                \${ev.linens ? `<span class="text-teal-600 font-semibold"><i class="fa-solid fa-shirt mr-1"></i>${ev.linens} kpl</span>` : ''}
+                            </div>
+                        `;
+                    });
+                    listHtml += `</div>`;
+                    return listHtml;
+                };
+
+                html += `
+                    <div class="p-5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h3 class="font-bold text-slate-900 text-lg flex items-center space-x-2">
+                                <i class="fa-solid fa-house text-teal-600"></i>
+                                <span>\${cabin}</span>
+                            </h3>
+                            <span class="px-3 py-1 bg-teal-50 text-teal-700 text-xs font-bold rounded-xl border border-teal-100">Yhteensä \${data.total} merkintää</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Siivoukset -->
+                            <div class="p-4 bg-slate-50/50 rounded-xl border border-slate-100 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-teal-700 uppercase font-bold flex items-center space-x-1">
+                                        <i class="fa-solid fa-broom"></i>
+                                        <span>Siivoukset (\${data.cleanings.length})</span>
+                                    </span>
+                                </div>
+                                \${renderEventListItems(data.cleanings, 'Siivous')}
+                            </div>
+
+                            <!-- Tarkastukset -->
+                            <div class="p-4 bg-slate-50/50 rounded-xl border border-slate-100 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-indigo-700 uppercase font-bold flex items-center space-x-1">
+                                        <i class="fa-solid fa-clipboard-check"></i>
+                                        <span>Tarkastukset (\${data.inspections.length})</span>
+                                    </span>
+                                </div>
+                                \${renderEventListItems(data.inspections, 'Tarkastus')}
+                            </div>
+
+                            <!-- Varaukset -->
+                            <div class="p-4 bg-slate-50/50 rounded-xl border border-slate-100 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-amber-700 uppercase font-bold flex items-center space-x-1">
+                                        <i class="fa-solid fa-calendar-check"></i>
+                                        <span>Varaukset (\${data.bookings.length})</span>
+                                    </span>
+                                </div>
+                                \${renderEventListItems(data.bookings, 'Varaus')}
+                            </div>
+                        </div>
+
+                        <div class="pt-2 text-xs text-slate-500 flex items-center justify-between bg-teal-50/40 p-3 rounded-xl border border-teal-100">
+                            <span>Liinavaatteet yhteensä tässä kuussa:</span>
+                            <strong class="text-teal-900 font-black text-sm">\${data.linens} kpl</strong>
+                        </div>
+                    </div>
+                `;
+            });
+            monthlyReportsContent.innerHTML = html;
+        }
+
+        cabinForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('new-cabin-name`').value;
+            const email = document.getElementById('new-cabin-email').value;
+
+            const { data, error } = await supabaseClient.rpc('add_cabin_by_email', { 
+                cabin_name: name, 
+                owner_email: email 
+            });
+
+            if (error) {
+                alert('Mökin luonti epäonnistui: ' + error.message + '\n(Varmista että olet ajanut add_cabin_by_email funktion Supabaseen!)');
+            } else {
+                document.getElementById('new-cabin-name').value = '';
+                document.getElementById('new-cabin-email').value = '';
+                loadCabins();
+                renderCabinsList();
+                alert('Mökki lisätty onnistuneesti!');
+            }
+        });
+
+        async function renderCabinsList() {
+            try {
+                const { data, error } = await supabaseClient.from('cabins').select('*');
+                if (error) throw error;
+                
+                if (!data || data.length === 0) {
+                    cabinsList.innerHTML = `<p class="text-xs text-slate-500">Ei luotuja mökkejä.</p>`;
+                    return;
+                }
+
+                let html = '';
+                data.forEach(c => {
+                    html += `
+                        <div class="p-4 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-sm"><i class="fa-solid fa-house mr-2 text-teal-600"></i>${c.name}</h4>
+                                <p class="text-xs text-slate-400 mt-0.5">Omistajan ID: ${c.owner_id}</p>
+                            </div>
+                            <button onclick="deleteCabin('${c.id}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold rounded-lg transition">Poista</button>
+                        </div>
+                    `;
+                });
+                cabinsList.innerHTML = html;
+            } catch (err) {
+                cabinsList.innerHTML = `<p class="text-xs text-rose-500">Virhe mökkien latauksessa.</p>`;
+            }
+        }
+
+        window.deleteCabin = async function(id) {
+            if (!confirm('Haluatko varmasti poistaa tämän mökin?')) return;
+            const { error } = await supabaseClient.from('cabins').delete().eq('id', id);
+            if (error) {
+                alert('Poisto epäonnistui: ' + error.message);
+            } else {
+                loadCabins();
+                renderCabinsList();
+            }
+        }
+    </script>
+</body>
+</html>
