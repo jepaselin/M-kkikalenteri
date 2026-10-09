@@ -25,8 +25,8 @@
                 <div class="w-16 h-16 bg-teal-50 text-teal-600 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-4 shadow-inner">
                     <i class="fa-solid fa-mountain-sun"></i>
                 </div>
-                <h1 class="text-2xl font-bold text-slate-900">Mökkikalenteri</h1>
-                <p class="text-sm text-slate-500 mt-1">Kirjaudu sisään hallitaksesi varauksia</p>
+                <h1 id="auth-title" class="text-2xl font-bold text-slate-900">Mökkikalenteri</h1>
+                <p id="auth-subtitle" class="text-sm text-slate-500 mt-1">Kirjaudu sisään hallitaksesi varauksia</p>
             </div>
 
             <form id="auth-form" class="space-y-4">
@@ -233,6 +233,8 @@
             await loadCabins();
             await loadEvents();
             initCalendar();
+            renderTasks();
+            renderReports();
 
             if (isWorker && !isAdmin) {
                 document.getElementById('admin-tabs-container').classList.add('hidden');
@@ -272,6 +274,8 @@
             allEventsCache = data || [];
             document.getElementById('stat-total-events').textContent = allEventsCache.length;
             if (calendar) calendar.refetchEvents();
+            renderTasks();
+            renderReports();
         }
 
         function initCalendar() {
@@ -306,10 +310,14 @@
         }
 
         function renderTasks() {
-            const date = document.getElementById('task-date-picker').value;
+            const dateInput = document.getElementById('task-date-picker');
+            if (!dateInput) return;
+            const date = dateInput.value;
             const tasks = allEventsCache.filter(ev => (ev.category === 'siivous' || ev.category === 'tarkastus') && (ev.check_out?.startsWith(date) || ev.date === date));
             
             const list = document.getElementById('daily-tasks-list');
+            if (!list) return;
+
             if (tasks.length === 0) {
                 list.innerHTML = `<p class="text-sm text-slate-500">Ei siivous- tai tarkastustehtäviä valitulle päivälle.</p>`;
                 return;
@@ -336,14 +344,17 @@
         window.toggleComplete = async function(id, currentStatus) {
             await supabaseClient.from('events').update({ completed: !currentStatus }).eq('id', id);
             await loadEvents();
-            renderTasks();
         }
 
         function renderReports() {
-            const month = document.getElementById('report-month-picker').value;
+            const monthInput = document.getElementById('report-month-picker');
+            if (!monthInput) return;
+            const month = monthInput.value;
             const events = allEventsCache.filter(ev => (ev.check_out || ev.date || '').startsWith(month));
             
             const content = document.getElementById('monthly-reports-content');
+            if (!content) return;
+
             if (events.length === 0) {
                 content.innerHTML = `<p class="text-sm text-slate-500">Ei tapahtumia valitulla kuukaudella.</p>`;
                 return;
@@ -368,6 +379,7 @@
         async function renderCabinsList() {
             const { data } = await supabaseClient.from('cabins').select('*');
             const list = document.getElementById('cabins-list');
+            if (!list) return;
             if (!data || data.length === 0) {
                 list.innerHTML = `<p class="text-xs text-slate-500">Ei mökkejä.</p>`;
                 return;
