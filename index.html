@@ -17,7 +17,7 @@
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
 
-    <!-- LOGIN / REGISTER VIEW -->
+    <!-- LOGIN / REGISTER / RECOVERY VIEW -->
     <div id="auth-container" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 overflow-hidden relative">
             <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-teal-500 to-indigo-600"></div>
@@ -29,18 +29,42 @@
                 <p id="auth-subtitle" class="text-sm text-slate-500 mt-1">Kirjaudu sisään hallitaksesi varauksia</p>
             </div>
 
+            <!-- Standard Auth Form -->
             <form id="auth-form" class="space-y-4">
-                <div>
+                <div id="email-field-container">
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Sähköpostiosoite</label>
                     <input type="email" id="email" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="esimerkki@email.fi">
                 </div>
-                <div>
+                <div id="password-field-container">
                     <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Salasana</label>
-                    <input type="password" id="password" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="••••••••">
+                    <input type="password" id="password" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="••••••••">
+                    <div class="flex justify-end mt-1">
+                        <button type="button" id="forgot-password-link" class="text-xs text-teal-600 hover:underline font-medium">Unohditko salasanan?</button>
+                    </div>
                 </div>
+
                 <div id="auth-error" class="hidden text-xs text-rose-500 bg-rose-50 border border-rose-100 p-3 rounded-xl font-medium"></div>
-                <button type="submit" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-lg transition">Kirjaudu sisään</button>
+                <div id="auth-success" class="hidden text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 p-3 rounded-xl font-medium"></div>
+
+                <button type="submit" id="auth-submit-btn" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-lg transition">Kirjaudu sisään</button>
             </form>
+
+            <!-- Update Password Form (Recovery) -->
+            <form id="update-password-form" class="hidden space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Uusi salasana</label>
+                    <input type="password" id="new-password" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Syötä uusi salasana">
+                </div>
+                <div id="update-error" class="hidden text-xs text-rose-500 bg-rose-50 border border-rose-100 p-3 rounded-xl font-medium"></div>
+                <button type="submit" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-lg transition">Tallenna uusi salasana</button>
+            </form>
+
+            <div class="mt-6 text-center space-y-2">
+                <button type="button" id="toggle-auth-mode" class="block w-full text-xs text-slate-500 hover:text-teal-600 font-medium transition">
+                    Eikö sinulla ole vielä tiliä? <span class="text-teal-600 font-bold underline">Rekisteröidy</span>
+                </button>
+                <button type="button" id="back-to-login-btn" class="hidden block w-full text-xs text-teal-600 font-bold underline transition">Takaisin kirjautumiseen</button>
+            </div>
         </div>
     </div>
 
@@ -185,45 +209,82 @@
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let currentUser = null, calendar = null, allEventsCache = [], allCabinsCache = [];
+        let isRegisterMode = false, isForgotPasswordMode = false, isPasswordRecoveryMode = false;
+
+        const authContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        const authForm = document.getElementById('auth-form');
+        const updatePasswordForm = document.getElementById('update-password-form');
+        const passwordFieldContainer = document.getElementById('password-field-container');
+        const authTitle = document.getElementById('auth-title');
+        const authSubtitle = document.getElementById('auth-subtitle');
+        const authSubmitBtn = document.getElementById('auth-submit-btn');
+        const toggleAuthModeBtn = document.getElementById('toggle-auth-mode');
+        const backToLoginBtn = document.getElementById('back-to-login-btn');
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
+        const authError = document.getElementById('auth-error');
+        const authSuccess = document.getElementById('auth-success');
+        const updateError = document.getElementById('update-error');
 
         window.addEventListener('DOMContentLoaded', async () => {
+            supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                if (event === "PASSWORD_RECOVERY") {
+                    isPasswordRecoveryMode = true;
+                    showUpdatePasswordView();
+                } else if (session) {
+                    if (!isPasswordRecoveryMode) {
+                        currentUser = session.user;
+                        showApp();
+                    }
+                } else {
+                    if (!isPasswordRecoveryMode) {
+                        currentUser = null;
+                        showAuth();
+                    }
+                }
+            });
+
             const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
+            if (session && !isPasswordRecoveryMode) {
                 currentUser = session.user;
                 showApp();
-            } else {
-                document.getElementById('auth-container').classList.remove('hidden');
+            } else if (!isPasswordRecoveryMode) {
+                showAuth();
             }
 
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('task-date-picker').value = today;
-            document.getElementById('task-date-picker').addEventListener('change', renderTasks);
+            const taskPicker = document.getElementById('task-date-picker');
+            if (taskPicker) {
+                taskPicker.value = today;
+                taskPicker.addEventListener('change', renderTasks);
+            }
 
-            document.getElementById('report-month-picker').value = today.slice(0, 7);
-            document.getElementById('report-month-picker').addEventListener('change', renderReports);
-        });
-
-        document.getElementById('auth-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            if (error) {
-                document.getElementById('auth-error').textContent = "Virhe: " + error.message;
-                document.getElementById('auth-error').classList.remove('hidden');
-            } else {
-                location.reload();
+            const reportPicker = document.getElementById('report-month-picker');
+            if (reportPicker) {
+                reportPicker.value = today.slice(0, 7);
+                reportPicker.addEventListener('change', renderReports);
             }
         });
 
-        document.getElementById('logout-btn').addEventListener('click', async () => {
-            await supabaseClient.auth.signOut();
-            location.reload();
-        });
+        function showAuth() {
+            authContainer.classList.remove('hidden');
+            appContainer.classList.add('hidden');
+        }
+
+        function showUpdatePasswordView() {
+            authContainer.classList.remove('hidden');
+            appContainer.classList.add('hidden');
+            authForm.classList.add('hidden');
+            updatePasswordForm.classList.remove('hidden');
+            authTitle.textContent = "Vaihda uusi salasana";
+            authSubtitle.textContent = "Kirjoita uusi salasana tilillesi";
+            toggleAuthModeBtn.classList.add('hidden');
+            backToLoginBtn.classList.add('hidden');
+        }
 
         async function showApp() {
-            document.getElementById('auth-container').classList.add('hidden');
-            document.getElementById('app-container').classList.remove('hidden');
+            authContainer.classList.add('hidden');
+            appContainer.classList.remove('hidden');
 
             const isAdmin = currentUser.email === ADMIN_EMAIL;
             const isWorker = WORKER_EMAILS.includes(currentUser.email);
@@ -243,6 +304,111 @@
                 renderTasks();
             }
         }
+
+        forgotPasswordLink.addEventListener('click', () => {
+            isForgotPasswordMode = true;
+            isRegisterMode = false;
+            authTitle.textContent = "Palauta salasana";
+            authSubtitle.textContent = "Lähetämme sähköpostiisi palautuslinkin";
+            authSubmitBtn.textContent = "Lähetä palautuslinkki";
+            passwordFieldContainer.classList.add('hidden');
+            toggleAuthModeBtn.classList.add('hidden');
+            backToLoginBtn.classList.remove('hidden');
+            authError.classList.add('hidden');
+            authSuccess.classList.add('hidden');
+        });
+
+        backToLoginBtn.addEventListener('click', () => {
+            isForgotPasswordMode = false;
+            isRegisterMode = false;
+            authTitle.textContent = "Mökkikalenteri";
+            authSubtitle.textContent = "Kirjaudu sisään hallitaksesi varauksia";
+            authSubmitBtn.textContent = "Kirjaudu sisään";
+            passwordFieldContainer.classList.remove('hidden');
+            toggleAuthModeBtn.classList.remove('hidden');
+            backToLoginBtn.classList.add('hidden');
+            authError.classList.add('hidden');
+            authSuccess.classList.add('hidden');
+        });
+
+        toggleAuthModeBtn.addEventListener('click', () => {
+            isRegisterMode = !isRegisterMode;
+            if (isRegisterMode) {
+                authTitle.textContent = "Luo uusi tili";
+                authSubtitle.textContent = "Rekisteröidy mökin omistajaksi";
+                authSubmitBtn.textContent = "Rekisteröidy";
+                toggleAuthModeBtn.innerHTML = 'Onko sinulla jo tili? <span class="text-teal-600 font-bold underline">Kirjaudu sisään</span>';
+            } else {
+                authTitle.textContent = "Mökkikalenteri";
+                authSubtitle.textContent = "Kirjaudu sisään hallitaksesi varauksia";
+                authSubmitBtn.textContent = "Kirjaudu sisään";
+                toggleAuthModeBtn.innerHTML = 'Eikö sinulla ole vielä tiliä? <span class="text-teal-600 font-bold underline">Rekisteröidy</span>';
+            }
+            authError.classList.add('hidden');
+            authSuccess.classList.add('hidden');
+        });
+
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            authError.classList.add('hidden');
+            authSuccess.classList.add('hidden');
+            const email = document.getElementById('email').value;
+
+            if (isForgotPasswordMode) {
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.href
+                });
+                if (error) {
+                    authError.textContent = "Virhe: " + error.message;
+                    authError.classList.remove('hidden');
+                } else {
+                    authSuccess.textContent = "Salasanan palautuslinkki lähetetty sähköpostiisi!";
+                    authSuccess.classList.remove('hidden');
+                }
+                return;
+            }
+
+            const password = document.getElementById('password').value;
+
+            if (isRegisterMode) {
+                const { error } = await supabaseClient.auth.signUp({ email, password });
+                if (error) {
+                    authError.textContent = error.message;
+                    authError.classList.remove('hidden');
+                } else {
+                    alert('Rekisteröityminen onnistui! Voit nyt kirjautua sisään.');
+                    isRegisterMode = false;
+                    authTitle.textContent = "Mökkikalenteri";
+                    authSubtitle.textContent = "Kirjaudu sisään hallitaksesi varauksia";
+                    authSubmitBtn.textContent = "Kirjaudu sisään";
+                }
+            } else {
+                const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) {
+                    authError.textContent = "Virhe kirjautumisessa: tarkista sähköposti ja salasana.";
+                    authError.classList.remove('hidden');
+                }
+            }
+        });
+
+        updatePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            updateError.classList.add('hidden');
+            const newPassword = document.getElementById('new-password').value;
+
+            const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+            if (error) {
+                updateError.textContent = "Virhe: " + error.message;
+                updateError.classList.remove('hidden');
+            } else {
+                alert('Salasana vaihdettu onnistuneesti! Voit nyt kirjautua sisään.');
+                window.location.href = window.location.pathname;
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+        });
 
         const tabs = [
             { btn: document.getElementById('tab-calendar'), wrapper: document.getElementById('view-calendar-wrapper') },
