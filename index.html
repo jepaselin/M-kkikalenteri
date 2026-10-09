@@ -17,7 +17,7 @@
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800">
 
-    <!-- LOGIN VIEW -->
+    <!-- LOGIN / REGISTER VIEW -->
     <div id="auth-container" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 overflow-hidden relative">
             <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-teal-500 to-indigo-600"></div>
@@ -25,8 +25,8 @@
                 <div class="w-16 h-16 bg-teal-50 text-teal-600 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-4 shadow-inner">
                     <i class="fa-solid fa-mountain-sun"></i>
                 </div>
-                <h1 class="text-2xl font-bold text-slate-900">Mökkikalenteri</h1>
-                <p class="text-sm text-slate-500 mt-1">Kirjaudu sisään hallitaksesi varauksia tai tehtäviä</p>
+                <h1 id="auth-title" class="text-2xl font-bold text-slate-900">Mökkikalenteri</h1>
+                <p id="auth-subtitle" class="text-sm text-slate-500 mt-1">Kirjaudu sisään hallitaksesi varauksia</p>
             </div>
 
             <form id="auth-form" class="space-y-4">
@@ -60,7 +60,7 @@
                 <div class="flex items-center space-x-4">
                     <button id="open-modal-btn" class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-md transition flex items-center space-x-2">
                         <i class="fa-solid fa-plus"></i>
-                        <span>Lisää varaus / tehtävä</span>
+                        <span>Lisää uusi varaus</span>
                     </button>
                     <button id="logout-btn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-4 py-2.5 rounded-xl transition">Kirjaudu ulos</button>
                 </div>
@@ -68,22 +68,24 @@
         </header>
 
         <!-- Navigation Tabs -->
-        <div id="nav-tabs-container" class="bg-white border-b border-slate-200">
+        <div id="admin-tabs-container" class="bg-white border-b border-slate-200">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-8">
-                <button id="tab-calendar" class="py-3 text-sm font-bold text-teal-600 border-b-2 border-teal-600 transition">Kalenteri</button>
-                <button id="tab-tasks" class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition">Päivän tehtävät</button>
-                <button id="tab-reports" class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition">Kuukausitilastot</button>
-                <button id="tab-cabins" class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition">Mökkien hallinta</button>
+                <button id="tab-calendar" class="py-3 text-sm font-bold text-teal-600 border-b-2 border-teal-600 transition flex items-center space-x-2"><i class="fa-solid fa-calendar"></i><span>Kalenteri</span></button>
+                <button id="tab-tasks" class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition flex items-center space-x-2"><i class="fa-solid fa-list-check"></i><span>Päivän tehtävät</span></button>
+                <button id="tab-reports" class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition flex items-center space-x-2"><i class="fa-solid fa-chart-pie"></i><span>Kuukausitilastot</span></button>
+                <button id="tab-cabins" class="py-3 text-sm font-semibold text-slate-500 hover:text-slate-800 border-b-2 border-transparent transition flex items-center space-x-2"><i class="fa-solid fa-house-chimney"></i><span>Mökkien hallinta</span></button>
             </div>
         </div>
 
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full grid grid-cols-1 lg:grid-cols-4 gap-8">
             <div class="lg:col-span-1 space-y-6">
                 <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
-                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Tilastot</h2>
-                    <div class="p-4 bg-teal-50 border border-teal-100 rounded-xl">
-                        <div class="text-xs font-semibold text-teal-600 uppercase">Merkintöjä yhteensä</div>
-                        <div id="stat-total-events" class="text-2xl font-black text-teal-900 mt-1">0</div>
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4">Varaukset & Tilastot</h2>
+                    <div class="space-y-4">
+                        <div class="p-4 bg-teal-50 border border-teal-100 rounded-xl">
+                            <div class="text-xs font-semibold text-teal-600 uppercase">Merkintöjä yhteensä</div>
+                            <div id="stat-total-events" class="text-2xl font-black text-teal-900 mt-1">0</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -106,7 +108,7 @@
                 <!-- Reports View -->
                 <div id="view-reports-wrapper" class="hidden bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-6">
                     <div class="flex items-center justify-between pb-4 border-b border-slate-100">
-                        <h2 class="text-xl font-bold text-slate-900">Kuukausitilastot</h2>
+                        <h2 class="text-xl font-bold text-slate-900">Kuukausitilastot ja tarkat tiedot</h2>
                         <input type="month" id="report-month-picker" class="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold">
                     </div>
                     <div id="monthly-reports-content" class="space-y-4"></div>
@@ -129,7 +131,7 @@
     <!-- EVENT MODAL -->
     <div id="event-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 relative">
-            <h2 class="text-xl font-bold mb-4">Lisää / Muokkaa merkintää</h2>
+            <h2 class="text-xl font-bold mb-4">Lisää / Muokkaa varausta</h2>
             <form id="event-form" class="space-y-4">
                 <input type="hidden" id="event-id">
                 <div>
@@ -138,9 +140,15 @@
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold uppercase mb-1">Päivämäärä / Check-out</label>
+                        <label class="block text-xs font-semibold uppercase mb-1">Check-in Pvm</label>
+                        <input type="date" id="event-check-in-date" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase mb-1">Check-out Pvm</label>
                         <input type="date" id="event-check-out-date" required class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm">
                     </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase mb-1">Kategoria</label>
                         <select id="event-category" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm">
@@ -149,18 +157,21 @@
                             <option value="varaus">Varaus</option>
                         </select>
                     </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase mb-1">Liinavaatteet (kpl)</label>
-                    <input type="number" id="event-linens" min="0" value="0" class="w-full px-4 py-2 bg-slate-50 border rounded-xl text-sm">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase mb-1">Liinavaatteet (kpl)</label>
+                        <input type="number" id="event-linens" min="0" value="0" class="w-full px-3 py-2 bg-slate-50 border rounded-xl text-sm">
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold uppercase mb-1">Lisätieto</label>
-                    <textarea id="event-notes" rows="2" class="w-full px-4 py-2 bg-slate-50 border rounded-xl text-sm"></textarea>
+                    <textarea id="event-notes" rows="2" class="w-full px-4 py-2 bg-slate-50 border rounded-xl text-sm" placeholder="Lisätietoja..."></textarea>
                 </div>
-                <div class="flex justify-end space-x-3">
-                    <button type="button" id="cancel-modal-btn" class="px-4 py-2 bg-slate-100 rounded-xl text-sm">Peruuta</button>
-                    <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-xl text-sm">Tallenna</button>
+                <div class="flex justify-between items-center pt-2">
+                    <button type="button" id="delete-event-btn" class="hidden px-4 py-2 bg-rose-50 text-rose-600 rounded-xl text-sm font-semibold">Poista</button>
+                    <div class="flex space-x-3 ml-auto">
+                        <button type="button" id="cancel-modal-btn" class="px-4 py-2 bg-slate-100 rounded-xl text-sm">Peruuta</button>
+                        <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-xl text-sm font-semibold">Tallenna</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -188,8 +199,7 @@
             document.getElementById('task-date-picker').value = today;
             document.getElementById('task-date-picker').addEventListener('change', renderTasks);
 
-            const currentMonth = today.slice(0, 7);
-            document.getElementById('report-month-picker').value = currentMonth;
+            document.getElementById('report-month-picker').value = today.slice(0, 7);
             document.getElementById('report-month-picker').addEventListener('change', renderReports);
         });
 
@@ -199,7 +209,7 @@
             const password = document.getElementById('password').value;
             const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
             if (error) {
-                document.getElementById('auth-error').textContent = "Virhe kirjautumisessa: " + error.message;
+                document.getElementById('auth-error').textContent = "Virhe: " + error.message;
                 document.getElementById('auth-error').classList.remove('hidden');
             } else {
                 location.reload();
@@ -225,14 +235,13 @@
             initCalendar();
 
             if (isWorker && !isAdmin) {
-                document.getElementById('nav-tabs-container').classList.add('hidden');
+                document.getElementById('admin-tabs-container').classList.add('hidden');
                 document.getElementById('view-calendar-wrapper').classList.add('hidden');
                 document.getElementById('view-tasks-wrapper').classList.remove('hidden');
                 renderTasks();
             }
         }
 
-        // Tabs
         const tabs = [
             { btn: document.getElementById('tab-calendar'), wrapper: document.getElementById('view-calendar-wrapper') },
             { btn: document.getElementById('tab-tasks'), wrapper: document.getElementById('view-tasks-wrapper'), render: renderTasks },
@@ -243,9 +252,10 @@
         tabs.forEach(t => {
             if (!t.btn) return;
             t.btn.addEventListener('click', () => {
-                tabs.forEach(x => { if(x.btn) { x.btn.className = "py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent"; x.wrapper.classList.add('hidden'); }});
-                t.btn.className = "py-3 text-sm font-bold text-teal-600 border-b-2 border-teal-600";
+                tabs.forEach(x => { if(x.btn) { x.btn.className = "py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent flex items-center space-x-2"; x.wrapper.classList.add('hidden'); }});
+                t.btn.className = "py-3 text-sm font-bold text-teal-600 border-b-2 border-teal-600 flex items-center space-x-2";
                 t.wrapper.classList.remove('hidden');
+                if (t.btn === document.getElementById('tab-calendar') && calendar) calendar.updateSize();
                 if (t.render) t.render();
             });
         });
@@ -269,109 +279,5 @@
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
                 initialView: 'dayGridMonth',
                 locale: 'fi',
-                events: allEventsCache.map(ev => ({
-                    id: ev.id,
-                    title: `[${ev.cabin_name}] ${ev.title} (${ev.category})`,
-                    start: ev.check_out || ev.date,
-                    backgroundColor: ev.completed ? '#94a3b8' : (ev.category === 'siivous' ? '#0d9488' : '#6366f1')
-                }))
-            });
-            calendar.render();
-        }
-
-        function renderTasks() {
-            const date = document.getElementById('task-date-picker').value;
-            const tasks = allEventsCache.filter(ev => (ev.category === 'siivous' || ev.category === 'tarkastus') && (ev.check_out?.startsWith(date) || ev.date === date));
-            
-            const list = document.getElementById('daily-tasks-list');
-            if (tasks.length === 0) {
-                list.innerHTML = `<p class="text-sm text-slate-500">Ei siivous- tai tarkastustehtäviä valitulle päivälle.</p>`;
-                return;
-            }
-
-            list.innerHTML = tasks.map(ev => `
-                <div class="p-4 bg-white border ${ev.completed ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-200'} rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <div class="flex items-center space-x-2">
-                            <span class="px-2 py-0.5 text-xs font-bold uppercase rounded bg-teal-50 text-teal-700">${ev.category}</span>
-                            <span class="font-bold text-slate-900">${ev.cabin_name}</span>
-                        </div>
-                        <div class="text-xs text-slate-500 mt-1">Liinavaatteita: ${ev.linens || 0} kpl | ${ev.notes || 'Ei lisätietoja'}</div>
-                    </div>
-                    <button onclick="toggleComplete('${ev.id}', ${ev.completed})" class="px-4 py-2.5 ${ev.completed ? 'bg-slate-200 text-slate-700' : 'bg-emerald-600 hover:bg-emerald-700 text-white'} rounded-xl text-sm font-semibold transition shadow-sm">
-                        ${ev.completed ? 'Merkitse kesken' : 'Kuittaa mökki OK'}
-                    </button>
-                </div>
-            `).join('');
-        }
-
-        window.toggleComplete = async function(id, currentStatus) {
-            await supabaseClient.from('events').update({ completed: !currentStatus }).eq('id', id);
-            await loadEvents();
-            renderTasks();
-        }
-
-        function renderReports() {
-            const month = document.getElementById('report-month-picker').value;
-            const events = allEventsCache.filter(ev => (ev.check_out || ev.date || '').startsWith(month));
-            
-            const content = document.getElementById('monthly-reports-content');
-            if (events.length === 0) {
-                content.innerHTML = `<p class="text-sm text-slate-500">Ei tapahtumia valitulla kuukaudella.</p>`;
-                return;
-            }
-
-            content.innerHTML = `
-                <div class="space-y-2">
-                    <p class="text-xs font-bold text-slate-400 uppercase">Kuukauden merkinnät yhteensä: ${events.length}</p>
-                    ${events.map(ev => `
-                        <div class="p-3 bg-slate-50 border rounded-xl text-xs flex justify-between items-center">
-                            <div><strong class="text-slate-800">\${ev.cabin_name}</strong> - ${ev.title} (${ev.category})</div>
-                            <div class="text-teal-700 font-semibold">\${ev.check_out || ev.date}</div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-
-        async function renderCabinsList() {
-            const { data } = await supabaseClient.from('cabins').select('*');
-            const list = document.getElementById('cabins-list');
-            if (!data || data.length === 0) {
-                list.innerHTML = `<p class="text-xs text-slate-500">Ei mökkejä.</p>`;
-                return;
-            }
-            list.innerHTML = data.map(c => `
-                <div class="p-3 bg-slate-50 border rounded-xl flex justify-between items-center text-sm">
-                    <span>${c.name}</span>
-                    <span class="text-xs text-slate-400">Omistaja ID: ${c.owner_id}</span>
-                </div>
-            `).join('');
-        }
-
-        document.getElementById('open-modal-btn').addEventListener('click', () => document.getElementById('event-modal').classList.remove('hidden'));
-        document.getElementById('cancel-modal-btn').addEventListener('click', () => document.getElementById('event-modal').classList.add('hidden'));
-
-        document.getElementById('event-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const cabin = document.getElementById('event-cabin').value;
-            const category = document.getElementById('event-category').value;
-            const date = document.getElementById('event-check-out-date').value;
-
-            await supabaseClient.from('events').insert([{
-                title: category.charAt(0).toUpperCase() + category.slice(1),
-                cabin_name: cabin,
-                category: category,
-                date: date,
-                check_out: `${date}T10:00`,
-                linens: parseInt(document.getElementById('event-linens').value) || 0,
-                notes: document.getElementById('event-notes').value,
-                user_id: currentUser.id
-            }]);
-
-            document.getElementById('event-modal').classList.add('hidden');
-            loadEvents();
-        });
-    </script>
-</body>
-</html>
+                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+                events: allEventsCache.map(ev
