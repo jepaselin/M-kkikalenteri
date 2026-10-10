@@ -708,7 +708,7 @@
                 notes, 
                 start_time, 
                 end_time,
-                user_id: currentUser.id // Lisätty käyttäjän ID tallennukseen
+                user_id: currentUser ? currentUser.id : null 
             };
 
             let error;
