@@ -329,7 +329,7 @@
 
         let currentUser = null;
         let calendar = null;
-        let authMode = 'login'; // 'login', 'register', 'forgot'
+        let authMode = 'login';
         let allEventsCache = [];
         let allCabinsCache = [];
 
@@ -466,7 +466,6 @@
             });
         });
 
-        // Toggle Auth Modes (Login / Register / Forgot Password)
         toggleAuthModeBtn.addEventListener('click', () => {
             authError.classList.add('hidden');
             authSuccess.classList.add('hidden');
@@ -505,7 +504,6 @@
             toggleAuthModeBtn.innerHTML = 'Takaisin <span class="text-teal-600 font-bold underline">kirjautumiseen</span>';
         });
 
-        // Auth Form Handler (Login, Register, Forgot Password)
         authForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             authError.classList.add('hidden');
@@ -547,7 +545,6 @@
             }
         });
 
-        // Reset Password Form Handler (New Password)
         resetForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             resetError.classList.add('hidden');
@@ -592,7 +589,6 @@
             }
         }
 
-        // Modal Open/Close Controls
         openModalBtn.addEventListener('click', () => {
             document.getElementById('event-form').reset();
             document.getElementById('event-id').value = '';
@@ -614,7 +610,6 @@
         closeModalBtn.addEventListener('click', closeModal);
         cancelModalBtn.addEventListener('click', closeModal);
 
-        // Calendar Initialization
         function initCalendar() {
             const calendarEl = document.getElementById('calendar');
             calendar = new FullCalendar.Calendar(calendarEl, {
@@ -682,7 +677,6 @@
                 const isAdmin = currentUser.email === ADMIN_EMAIL;
                 const now = new Date();
 
-                // Näytetään tilastoissa vain tulevat tai meneillään olevat varaukset
                 const activeEvents = allEventsCache.filter(ev => new Date(ev.end_time) >= now);
                 const myActiveEvents = activeEvents.filter(ev => ev.user_id === currentUser.id);
 
@@ -694,9 +688,9 @@
                 if (calendar) {
                     calendar.removeAllEvents();
                     allEventsCache.forEach(ev => {
-                        let color = '#0d9488'; // Teal
-                        if (ev.category === 'siivous') color = '#ca8a04'; // Yellow
-                        if (ev.category === 'tarkastus') color = '#4f46e5'; // Indigo
+                        let color = '#0d9488';
+                        if (ev.category === 'siivous') color = '#ca8a04';
+                        if (ev.category === 'tarkastus') color = '#4f46e5';
 
                         calendar.addEvent({
                             id: ev.id,
@@ -713,7 +707,6 @@
             }
         }
 
-        // Save Event
         eventForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('event-id').value;
@@ -730,6 +723,7 @@
             const endTime = `${checkOutDate}T${checkOutHour}:00`;
 
             const eventData = {
+                date: checkInDate,
                 cabin_name: cabinName,
                 start_time: startTime,
                 end_time: endTime,
@@ -755,6 +749,8 @@
                 } else {
                     closeModal();
                     loadEvents();
+                    renderDailyTasks();
+                    renderMonthlyReports();
                 }
             } catch (err) {
                 console.error("Tallennusvirhe:", err);
@@ -762,7 +758,6 @@
             }
         });
 
-        // Delete Event
         deleteEventBtn.addEventListener('click', async () => {
             const id = document.getElementById('event-id').value;
             if (!id || !confirm('Haluatko varmasti poistaa tämän merkinnän?')) return;
@@ -773,18 +768,22 @@
             } else {
                 closeModal();
                 loadEvents();
+                renderDailyTasks();
+                renderMonthlyReports();
             }
         });
 
-        // Daily Tasks View Renderer
         function renderDailyTasks() {
-            const selectedDate = taskDatePicker.value;
+            const selectedDate = taskDatePicker.value; // YYYY-MM-DD
             dailyTasksList.innerHTML = '';
 
+            // Verrataan turvallisesti päivämääriä (ottaa huomioon myös kentän 'date' jos olemassa, tai aikaleiman alun)
             const dayEvents = allEventsCache.filter(ev => {
-                const startDay = ev.start_time.split('T')[0];
-                const endDay = ev.end_time.split('T')[0];
-                return selectedDate >= startDay && selectedDate <= endDay;
+                const startDate = ev.start_time ? ev.start_time.substring(0, 10) : '';
+                const endDate = ev.end_time ? ev.end_time.substring(0, 10) : '';
+                const eventDate = ev.date ? ev.date : startDate;
+                
+                return selectedDate === eventDate || (selectedDate >= startDate && selectedDate <= endDate);
             });
 
             if (dayEvents.length === 0) {
@@ -794,30 +793,46 @@
 
             dayEvents.forEach(ev => {
                 const card = document.createElement('div');
-                card.className = "p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4";
+                card.className = `p-4 border rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${ev.completed ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`;
                 card.innerHTML = `
                     <div>
                         <div class="flex items-center space-x-2">
-                            <span class="px-2.5 py-1 bg-teal-100 text-teal-800 text-xs font-bold rounded-lg uppercase">${ev.category || 'varaus'}</span>
-                            <h4 class="font-bold text-slate-900">${ev.cabin_name}</h4>
+                            <span class="px-2.5 py-1 ${ev.completed ? 'bg-emerald-200 text-emerald-900' : 'bg-teal-100 text-teal-800'} text-xs font-bold rounded-lg uppercase">${ev.category || 'varaus'}</span>
+                            <h4 class="font-bold text-slate-900">${ev.cabin_name} ${ev.completed ? '(Tehty ✓)' : ''}</h4>
                         </div>
                         <p class="text-xs text-slate-500 mt-1">Ajankohta: ${ev.start_time.replace('T', ' ')} — ${ev.end_time.replace('T', ' ')}</p>
                         ${ev.notes ? `<p class="text-xs text-slate-600 mt-2 italic">Lisätieto: \${ev.notes}</p>` : ''}
                     </div>
-                    <div class="text-right">
+                    <div class="flex items-center space-x-4">
                         <span class="text-xs font-semibold text-slate-600 bg-white px-3 py-1.5 border border-slate-200 rounded-lg inline-block">Liinavaatteet: ${ev.linens || 0} kpl</span>
+                        <button onclick="toggleTaskCompleted('${ev.id}', ${!ev.completed})" class="px-3 py-2 text-xs font-semibold rounded-lg transition ${ev.completed ? 'bg-slate-200 hover:bg-slate-300 text-slate-700' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}">
+                            ${ev.completed ? 'Merkitse keskeneräiseksi' : 'Kuittaa tehdyksi'}
+                        </button>
                     </div>
                 `;
                 dailyTasksList.appendChild(card);
             });
         }
 
-        // Monthly Reports Renderer
+        window.toggleTaskCompleted = async function(eventId, newStatus) {
+            const { error } = await supabaseClient.from('events').update({ completed: newStatus }).eq('id', eventId);
+            if (error) {
+                alert('Virhe tehtävän tilan päivityksessä: ' + error.message);
+            } else {
+                await loadEvents();
+                renderDailyTasks();
+            }
+        };
+
         function renderMonthlyReports() {
-            const selectedMonth = reportMonthPicker.value;
+            const selectedMonth = reportMonthPicker.value; // YYYY-MM
             monthlyReportsContent.innerHTML = '';
 
-            const monthEvents = allEventsCache.filter(ev => ev.start_time.startsWith(selectedMonth));
+            const monthEvents = allEventsCache.filter(ev => {
+                const startDate = ev.start_time ? ev.start_time.substring(0, 7) : '';
+                const eventDate = ev.date ? ev.date.substring(0, 7) : startDate;
+                return eventDate === selectedMonth;
+            });
 
             let totalLinens = 0;
             monthEvents.forEach(ev => { totalLinens += (ev.linens || 0); });
@@ -851,7 +866,6 @@
             `;
         }
 
-        // Cabin Management (Admin)
         async function renderCabinsList() {
             cabinsList.innerHTML = '';
             if (allCabinsCache.length === 0) {
@@ -865,7 +879,6 @@
                 item.innerHTML = `
                     <div>
                         <h4 class="font-bold text-slate-900">${c.name}</h4>
-                        <p class="text-xs text-slate-500">Omistajan sähköposti: ${c.owner_email || 'Ei määritelty'}</p>
                     </div>
                     <button onclick="deleteCabin('${c.id}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold rounded-lg transition">Poista</button>
                 `;
@@ -879,13 +892,17 @@
                 const name = document.getElementById('new-cabin-name').value;
                 const email = document.getElementById('new-cabin-email').value;
 
-                const { error } = await supabaseClient.from('cabins').insert([{ name, owner_email: email }]);
+                const { error } = await supabaseClient.rpc('add_cabin_by_email', {
+                    cabin_name: name,
+                    owner_email: email
+                });
 
                 if (error) {
                     alert('Virhe mökin luonnissa: ' + error.message);
                 } else {
                     document.getElementById('new-cabin-name').value = '';
                     document.getElementById('new-cabin-email').value = '';
+                    alert('Mökki lisätty onnistuneesti!');
                     loadCabins();
                     renderCabinsList();
                 }
