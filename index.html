@@ -666,19 +666,17 @@
             calendar.render();
         }
 
-        async function loadEvents() {
-            try {
-                const { data, error } = await supabaseClient.from('events').select('*');
-                if (error) throw error;
-                allEventsCache = data || [];
+        const isAdmin = currentUser.email === ADMIN_EMAIL;
+const now = new Date();
 
-                const isAdmin = currentUser.email === ADMIN_EMAIL;
-                const myEvents = allEventsCache.filter(ev => ev.user_id === currentUser.id);
+// Suodatetaan vain tulevat tai meneillään olevat merkinnät (loppuaika tulevaisuudessa)
+const activeEvents = allEventsCache.filter(ev => new Date(ev.end_time) >= now);
+const myActiveEvents = activeEvents.filter(ev => ev.user_id === currentUser.id);
 
-                document.getElementById('stat-my-events').textContent = myEvents.length;
-                if (isAdmin) {
-                    document.getElementById('stat-total-events').textContent = allEventsCache.length;
-                }
+document.getElementById('stat-my-events').textContent = myActiveEvents.length;
+if (isAdmin) {
+    document.getElementById('stat-total-events').textContent = activeEvents.length;
+}
 
                 if (calendar) {
                     calendar.removeAllEvents();
