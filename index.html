@@ -262,9 +262,13 @@
                         <div class="flex space-x-2">
                             <input type="date" id="event-check-in-date" required class="w-2/3 px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">
                             <select id="event-check-in-hour" class="w-1/3 px-2 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">
+                                <option value="00:00">00:00</option>
+                                <option value="06:00">06:00</option>
                                 <option value="12:00">12:00</option>
                                 <option value="14:00" selected>14:00</option>
                                 <option value="16:00">16:00</option>
+                                <option value="18:00">18:00</option>
+                                <option value="20:00">20:00</option>
                             </select>
                         </div>
                     </div>
@@ -273,8 +277,12 @@
                         <div class="flex space-x-2">
                             <input type="date" id="event-check-out-date" required class="w-2/3 px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">
                             <select id="event-check-out-hour" class="w-1/3 px-2 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">
+                                <option value="00:00">00:00</option>
+                                <option value="06:00">06:00</option>
                                 <option value="10:00" selected>10:00</option>
                                 <option value="12:00">12:00</option>
+                                <option value="14:00">14:00</option>
+                                <option value="16:00">16:00</option>
                             </select>
                         </div>
                     </div>
@@ -370,7 +378,6 @@
         const eventForm = document.getElementById('event-form');
 
         window.addEventListener('DOMContentLoaded', async () => {
-            // Tarkistetaan onko käyttäjä tullut salasanan palautuslinkistä (URL:ssä on type=recovery tai access_token)
             const hashParams = new URLSearchParams(window.location.hash.substring(1));
             const queryParams = new URLSearchParams(window.location.search);
             
@@ -552,7 +559,7 @@
                 resetError.classList.remove('hidden');
             } else {
                 alert('Salasana vaihdettu onnistuneesti! Voit nyt käyttää uutta salasanaa.');
-                window.location.href = window.location.pathname; // Poistaa tokenit URL:stä ja lataa sivun uudelleen
+                window.location.href = window.location.pathname;
             }
         });
 
@@ -666,22 +673,28 @@
             calendar.render();
         }
 
-        const isAdmin = currentUser.email === ADMIN_EMAIL;
-const now = new Date();
+        async function loadEvents() {
+            try {
+                const { data, error } = await supabaseClient.from('events').select('*');
+                if (error) throw error;
+                allEventsCache = data || [];
 
-// Suodatetaan vain tulevat tai meneillään olevat merkinnät (loppuaika tulevaisuudessa)
-const activeEvents = allEventsCache.filter(ev => new Date(ev.end_time) >= now);
-const myActiveEvents = activeEvents.filter(ev => ev.user_id === currentUser.id);
+                const isAdmin = currentUser.email === ADMIN_EMAIL;
+                const now = new Date();
 
-document.getElementById('stat-my-events').textContent = myActiveEvents.length;
-if (isAdmin) {
-    document.getElementById('stat-total-events').textContent = activeEvents.length;
-}
+                // Näytetään tilastoissa vain tulevat tai meneillään olevat varaukset
+                const activeEvents = allEventsCache.filter(ev => new Date(ev.end_time) >= now);
+                const myActiveEvents = activeEvents.filter(ev => ev.user_id === currentUser.id);
+
+                document.getElementById('stat-my-events').textContent = myActiveEvents.length;
+                if (isAdmin) {
+                    document.getElementById('stat-total-events').textContent = activeEvents.length;
+                }
 
                 if (calendar) {
                     calendar.removeAllEvents();
                     allEventsCache.forEach(ev => {
-                        let color = '#0d9488'; // Teal for varaus
+                        let color = '#0d9488'; // Teal
                         if (ev.category === 'siivous') color = '#ca8a04'; // Yellow
                         if (ev.category === 'tarkastus') color = '#4f46e5'; // Indigo
 
@@ -726,20 +739,26 @@ if (isAdmin) {
                 user_id: currentUser.id
             };
 
-            let error;
-            if (id) {
-                const res = await supabaseClient.from('events').update(eventData).eq('id', id);
-                error = res.error;
-            } else {
-                const res = await supabaseClient.from('events').insert([eventData]);
-                error = res.error;
-            }
+            try {
+                let error;
+                if (id) {
+                    const res = await supabaseClient.from('events').update(eventData).eq('id', id);
+                    error = res.error;
+                } else {
+                    const res = await supabaseClient.from('events').insert([eventData]);
+                    error = res.error;
+                }
 
-            if (error) {
-                alert('Virhe tallennuksessa: ' + error.message);
-            } else {
-                closeModal();
-                loadEvents();
+                if (error) {
+                    console.error("Supabase error:", error);
+                    alert('Virhe tallennuksessa: ' + error.message);
+                } else {
+                    closeModal();
+                    loadEvents();
+                }
+            } catch (err) {
+                console.error("Tallennusvirhe:", err);
+                alert('Odottamaton virhe tallennuksessa. Katso tiedot konsolista (F12).');
             }
         });
 
