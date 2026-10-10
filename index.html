@@ -185,7 +185,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-100">
                         <div>
                             <h2 class="text-xl font-bold text-slate-900">Päivän siivoukset ja tarkastukset</h2>
-                            <p class="text-xs text-slate-500 mt-0.5">Näyttää varaukset ja tehtävät valittuna päivänä (uloskirjautumispäivänä)</p>
+                            <p class="text-xs text-slate-500 mt-0.5">Näyttää varaukset ja tehtävät valittuna päivänä</p>
                         </div>
                         <div>
                             <input type="date" id="task-date-picker" class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500">
@@ -198,14 +198,14 @@
                 <div id="view-reports-wrapper" class="hidden bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-6">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-100">
                         <div>
-                            <h2 class="text-xl font-bold text-slate-900">Kuukausitilastot mökeittäin</h2>
-                            <p class="text-xs text-slate-500 mt-0.5">Mökkikohtaiset tapahtumat, tehtävät ja päivämäärät</p>
+                            <h2 class="text-xl font-bold text-slate-900">Kuukausitilastot ja tarkat päivämäärät</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Tarkastele kuukauden tapahtumia ja niiden tarkkoja ajankohtia</p>
                         </div>
                         <div>
                             <input type="month" id="report-month-picker" class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500">
                         </div>
                     </div>
-                    <div id="monthly-reports-content" class="space-y-6"></div>
+                    <div id="monthly-reports-content" class="space-y-4"></div>
                 </div>
 
                 <!-- Cabins Management View Wrapper (Admin only) -->
@@ -833,78 +833,36 @@
                 return startMonth === selectedMonth;
             });
 
-            if (monthEvents.length === 0) {
-                monthlyReportsContent.innerHTML = '<p class="text-sm text-slate-500 py-4 text-center">Ei merkintöjä tälle kuukaudelle.</p>';
-                return;
-            }
+            let totalLinens = 0;
+            monthEvents.forEach(ev => { totalLinens += (ev.linens || 0); });
 
-            // Ryhmitellään tapahtumat mökkikohtaisesti (cabin_name)
-            const eventsByCabin = {};
-            monthEvents.forEach(ev => {
-                const cabin = ev.cabin_name || 'Tuntematon mökki';
-                if (!eventsByCabin[cabin]) {
-                    eventsByCabin[cabin] = [];
-                }
-                eventsByCabin[cabin].push(ev);
-            });
-
-            // Generoidaan kortti jokaiselle mökille
-            Object.keys(eventsByCabin).forEach(cabinName => {
-                const cabinEvents = eventsByCabin[cabinName];
-                
-                // Lasketaan tehtävät tyypeittäin ja liinavaatteet
-                let totalLinens = 0;
-                const taskCounts = {};
-
-                cabinEvents.forEach(ev => {
-                    totalLinens += (ev.linens || 0);
-                    const cat = ev.category || 'varaus';
-                    taskCounts[cat] = (taskCounts[cat] || 0) + 1;
-                });
-
-                // Muodostetaan tekstimuotoinen kooste tehtävistä
-                const taskSummaryText = Object.entries(taskCounts)
-                    .map(([cat, count]) => `<span class="px-2 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-semibold capitalize">${cat}: ${count} kpl</span>`)
-                    .join(' ');
-
-                const cabinCard = document.createElement('div');
-                cabinCard.className = "p-5 bg-white border border-slate-200 rounded-2xl shadow-xs space-y-4";
-                
-                cabinCard.innerHTML = `
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
-                        <div>
-                            <h3 class="text-lg font-bold text-slate-900">${cabinName}</h3>
-                            <p class="text-xs text-slate-500">Yhteensä ${cabinEvents.length} merkintää tässä kuussa</p>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            ${taskSummaryText}
-                            <span class="px-2 py-1 bg-teal-50 text-teal-700 border border-teal-100 rounded-md text-xs font-bold">Liinavaatteet: ${totalLinens} kpl</span>
-                        </div>
+            monthlyReportsContent.innerHTML = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                        <div class="text-xs font-semibold text-slate-500 uppercase">Varauksia / merkintöjä yhteensä</div>
+                        <div class="text-xl font-black text-slate-900 mt-1">${monthEvents.length} kpl</div>
                     </div>
-
-                    <div class="space-y-2">
-                        ${cabinEvents.map(ev => {
-                            const startDateFormatted = ev.start_time ? ev.start_time.replace('T', ' ') : '—';
-                            const endDateFormatted = ev.end_time ? ev.end_time.replace('T', ' ') : '—';
-                            
-                            return `
-                                <div class="p-3 bg-slate-50 border border-slate-100 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                                    <div class="flex items-center space-x-2">
-                                        <span class="px-2 py-0.5 bg-teal-100 text-teal-800 font-bold rounded uppercase">\${ev.category || 'varaus'}</span>
-                                        <span class="font-semibold text-slate-800">Check-in: ${startDateFormatted} &rarr; Check-out:${endDateFormatted}</span>
-                                    </div>
-                                    <div class="flex items-center space-x-3 text-slate-500">
-                                        \${ev.linens ? `<span class="font-medium text-slate-700">Liinavaatteet: ${ev.linens} kpl</span>` : ''}
-                                        \${ev.notes ? `<span class="italic text-slate-500 bg-white px-2 py-1 rounded border border-slate-100">" ${ev.notes} "</span>` : ''}
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                        <div class="text-xs font-semibold text-slate-500 uppercase">Liinavaatteet yhteensä</div>
+                        <div class="text-xl font-black text-slate-900 mt-1">${totalLinens} kpl</div>
                     </div>
-                `;
-
-                monthlyReportsContent.appendChild(cabinCard);
-            });
+                </div>
+                <div class="space-y-3">
+                    <h3 class="font-bold text-sm text-slate-700">Tarkat ajankohdat kuukaudessa:</h3>
+                    ${monthEvents.length === 0 ? '<p class="text-xs text-slate-500">Ei merkintöjä tälle kuukaudelle.</p>' : ''}
+                    ${monthEvents.map(ev => `
+                        <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between text-sm">
+                            <div>
+                                <strong class="text-slate-900">\${ev.cabin_name}</strong> 
+                                <span class="text-xs text-slate-500 ml-2 uppercase bg-slate-100 px-2 py-0.5 rounded">\${ev.category || 'varaus'}</span>
+                            </div>
+                            <div class="text-xs text-slate-600">
+                                ${ev.start_time.replace('T', ' ')} &rarr; ${ev.end_time.replace('T', ' ')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
         }
 
         async function renderCabinsList() {
