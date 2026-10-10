@@ -618,7 +618,6 @@
 
                         allEventsCache = data || [];
                         
-                        // Päivitetään tilastot
                         const myEvents = allEventsCache.filter(ev => ev.cabins && ev.cabins.owner_email === currentUser.email);
                         document.getElementById('stat-my-events').textContent = myEvents.length;
                         if (currentUser.email === ADMIN_EMAIL) {
@@ -626,7 +625,7 @@
                         }
 
                         const mapped = allEventsCache.map(ev => {
-                            let color = '#0d9488'; // varaus
+                            let color = '#0d9488';
                             if (ev.category === 'siivous') color = '#d97706';
                             if (ev.category === 'tarkastus') color = '#4f46e5';
 
@@ -656,7 +655,6 @@
             if (calendar) calendar.refetchEvents();
         }
 
-        // Modal Handlerit
         openModalBtn.addEventListener('click', () => {
             eventForm.reset();
             document.getElementById('event-id').value = '';
@@ -703,7 +701,15 @@
             const start_time = `${checkInDate}T${checkInHour}:00`;
             const end_time = `${checkOutDate}T${checkOutHour}:00`;
 
-            const payload = { cabin_id, category, linens, notes, start_time, end_time };
+            const payload = { 
+                cabin_id, 
+                category, 
+                linens, 
+                notes, 
+                start_time, 
+                end_time,
+                user_id: currentUser.id // Lisätty käyttäjän ID tallennukseen
+            };
 
             let error;
             if (id) {
